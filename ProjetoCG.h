@@ -1,8 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <vector>
-#include "Lib/glew/glew.h"
-#include "Lib/freeglut/freeglut.h"
+#include "../raycife/Lib/glew/glew.h"
+#include "../raycife/Lib/freeglut/freeglut.h"
 
 
 using namespace std;
