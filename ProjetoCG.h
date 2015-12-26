@@ -131,6 +131,35 @@ public:
 		}
 	}
 
+	//Essa retorna alfa, beta e gama das coordenadas baricentricas
+	void coordBaricentricas(Ponto p, Face f)
+	{
+		float x1 = vertices.at(f.v1 - 1).ponto.x;
+		float x2 = vertices.at(f.v2 - 1).ponto.x;
+		float x3 = vertices.at(f.v3 - 1).ponto.x;
+
+		float y1 = vertices.at(f.v1 - 1).ponto.y;
+		float y2 = vertices.at(f.v2 - 1).ponto.y;
+		float y3 = vertices.at(f.v3 - 1).ponto.y;
+
+		float z1 = vertices.at(f.v1 - 1).ponto.z;
+		float z2 = vertices.at(f.v2 - 1).ponto.z;
+		float z3 = vertices.at(f.v3 - 1).ponto.z;
+
+		double det = ((y2 - y3)*(x1 - x3) + (x3 - x2)*(y1 - y3));
+	
+		if (det != 0)
+		{
+			double alfa = ((y2 - y3)*(x - x3) + (x3 - x2)*(y - y3)) / det;
+			double beta = ((y3 - y1)*(x - x3) + (x1 - x3)*(y - y3)) / det;
+			double gama = 1 - (alfa + beta);
+
+			return Vetor(alfa, beta, gama);
+		}
+
+		return Vetor();
+	}
+
 };
 
 class Raio{
