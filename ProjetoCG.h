@@ -5,6 +5,7 @@
 #include "../raycife/Lib/freeglut/freeglut.h"
 
 
+
 using namespace std;
 
 
@@ -18,38 +19,17 @@ class Ponto{
 public:
 	float x, y, z;
 
-	//Ponto::Ponto(float x, float y, float z){
-	//	this->x = x;
-	//	this->y = y;
-	//	this->z = z;
-	//}
-
-	//Ponto::~Ponto(){}
 };
 
 class Camera{
 public:
 	float x, y, z;
 
-	/*Camera::Camera(float x, float y, float z){
-	this->x = x;
-	this->y = y;
-	this->z = z;
-	}
-
-	Camera::~Camera(){}*/
 };
 
 class Cena{
 public:
 	Color background;
-
-	Cena::Cena(float r, float g, float b){
-		background.r = r;
-		background.g = g;
-		background.r = r;
-	}
-
 };
 
 class Janela{
@@ -63,20 +43,21 @@ public:
 	Color cor;
 };
 
-class Vertice{
+class Vetor{
 public:
 	float x, y, z;
+};
+
+class Vertice{
+public:
+	Vetor normal;
+	Ponto ponto;
+	
 };
 
 class Face{
 public:
 	int v1, v2, v3;
-
-	//Triangulo::Triangulo(int v1, int v2, int v3){
-	//	this->v1 = v1;
-	//	this->v2 = v2;
-	//	this->v3 = v3;
-	//}
 };
 
 class Objeto{
@@ -86,24 +67,24 @@ public:
 	vector<Vertice> vertices;
 	vector<Face> triangulos;
 
-	void addVertice(float xV, float yV, float zV){
-		Vertice vertice;
-		vertice.x = xV;
-		vertice.y = yV;
-		vertice.z = zV;
-		//adiciona um vertice a lista de vertices do objeto
-		vertices.push_back(vertice);
-	}
+	//void addVertice(float xV, float yV, float zV){
+	//	Vertice vertice;
+	//	vertice.x = xV;
+	//	vertice.y = yV;
+	//	vertice.z = zV;
+	//	//adiciona um vertice a lista de vertices do objeto
+	//	vertices.push_back(vertice);
+	//}
 
-	void addTriangulo(int v1, int v2, int v3){
-		Face triangulo;
-		triangulo.v1 = v1;
-		triangulo.v2 = v2;
-		triangulo.v3 = v3;
+	//void addTriangulo(int v1, int v2, int v3){
+	//	Face triangulo;
+	//	triangulo.v1 = v1;
+	//	triangulo.v2 = v2;
+	//	triangulo.v3 = v3;
 
-		//adiciona um triangula a lista de triangulos do objeto
-		triangulos.push_back(triangulo);
-	}
+	//	//adiciona um triangula a lista de triangulos do objeto
+	//	triangulos.push_back(triangulo);
+	//}
 
 };
 
@@ -113,6 +94,56 @@ public:
 	Ponto direcao;
 	int tamanho;//TODO: necessario?
 };
+
+
+
+//Funcoes matematicas importantes
+
+//Produto Escalar
+float escalar(Vetor vetor1, Vetor vetor2){
+	float  escalar = vetor1.x*vetor2.x + vetor1.y*vetor2.y + vetor1.z*vetor2.z;
+	return escalar;
+}
+
+//Produto Vetorial
+Vetor vetorial(Vetor vetor1, Vetor vetor2){
+
+	Vetor resposta;
+	resposta.x = (vetor1.y*vetor2.z) + (-1 * vetor1.z*vetor2.y);
+	resposta.y = (vetor1.z*vetor2.x) + (-1 * vetor1.x*vetor2.z);
+	resposta.z = (vetor1.x*vetor2.y) + (-1 * vetor1.y*vetor2.x);
+
+	return resposta;
+}
+
+//Normalizar vetor
+Vetor normalizar(Vetor vetor){
+
+	float modulo = sqrt(vetor.x*vetor.x + vetor.y*vetor.y + vetor.z*vetor.z);
+
+	Vetor vetorNormalizado = Vetor();
+	vetorNormalizado.x = vetor.x / modulo;
+	vetorNormalizado.y = vetor.y / modulo;
+	vetorNormalizado.z = vetor.z / modulo;
+
+	return vetorNormalizado;
+}
+
+//Calcular normal vertice de um triangulo (feito em relaçao a p1) *nao normalizado*
+Vetor calcularNormal(Ponto p1, Ponto p2, Ponto p3){
+	Vetor vetor1;
+	Vetor vetor2;
+	vetor1.x= p3.x - p1.x;
+	vetor1.y = p3.y - p1.y;
+	vetor1.z = p3.z - p1.z;
+
+	vetor2.x = p2.x - p1.x;
+	vetor2.y = p2.y - p1.y;
+	vetor2.z = p2.z - p1.z;
+
+	//cout<<"saiu calcula normal"<<endl;
+	return vetorial(vetor1, vetor2);
+}
 
 
 bool lerObjeto(const char* path, vector<Vertice> &out_vertices, vector<Face> &out_faces){
@@ -135,7 +166,6 @@ bool lerObjeto(const char* path, vector<Vertice> &out_vertices, vector<Face> &ou
 		// read the first word of the line
 		int res = fscanf(file, "%s", lineHeader);
 
-		int jj = 0;
 		if (res == EOF)
 			break; // EOF = End Of File. Quit the loop.
 
@@ -143,7 +173,7 @@ bool lerObjeto(const char* path, vector<Vertice> &out_vertices, vector<Face> &ou
 
 		if (strcmp(lineHeader, "v") == 0){
 			Vertice vertex;
-			fscanf(file, "%f %f %f\n", &vertex.x, &vertex.y, &vertex.z);
+			fscanf(file, "%f %f %f\n", &vertex.ponto.x, &vertex.ponto.y, &vertex.ponto.z);
 			temp_vertices.push_back(vertex);
 		}
 		else if (strcmp(lineHeader, "f") == 0){
