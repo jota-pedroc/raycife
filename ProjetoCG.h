@@ -132,32 +132,60 @@ public:
 	}
 
 	//Essa retorna alfa, beta e gama das coordenadas baricentricas
-	void coordBaricentricas(Ponto p, Face f)
+	Vetor coordBaricentricas(Ponto p, Face f)
 	{
-		float x1 = vertices.at(f.v1 - 1).ponto.x;
-		float x2 = vertices.at(f.v2 - 1).ponto.x;
-		float x3 = vertices.at(f.v3 - 1).ponto.x;
+		float xa= vertices.at(f.v1 - 1).ponto.x;
+		float xb = vertices.at(f.v2 - 1).ponto.x;
+		float xc = vertices.at(f.v3 - 1).ponto.x;
 
-		float y1 = vertices.at(f.v1 - 1).ponto.y;
-		float y2 = vertices.at(f.v2 - 1).ponto.y;
-		float y3 = vertices.at(f.v3 - 1).ponto.y;
+		float ya = vertices.at(f.v1 - 1).ponto.y;
+		float yb = vertices.at(f.v2 - 1).ponto.y;
+		float yc = vertices.at(f.v3 - 1).ponto.y;
 
-		float z1 = vertices.at(f.v1 - 1).ponto.z;
-		float z2 = vertices.at(f.v2 - 1).ponto.z;
-		float z3 = vertices.at(f.v3 - 1).ponto.z;
+		float za = vertices.at(f.v1 - 1).ponto.z;
+		float zb = vertices.at(f.v2 - 1).ponto.z;
+		float zc = vertices.at(f.v3 - 1).ponto.z;
 
-		double det = ((y2 - y3)*(x1 - x3) + (x3 - x2)*(y1 - y3));
-	
-		if (det != 0)
-		{
-			double alfa = ((y2 - y3)*(x - x3) + (x3 - x2)*(y - y3)) / det;
-			double beta = ((y3 - y1)*(x - x3) + (x1 - x3)*(y - y3)) / det;
-			double gama = 1 - (alfa + beta);
+		Vetor v0, v1, v2;
+		v0.x = xb-xa;
+		v0.y = yb - ya;
+		v0.z = zb - za;
 
-			return Vetor(alfa, beta, gama);
-		}
+		v1.x = xc - xa;
+		v1.y = yc - ya;
+		v1.z = zc - za;
+		
+		v2.x = p.x - xa;
+		v2.y = p.y - ya;
+		v2.z = p.z - za;
 
-		return Vetor();
+		float d00 = escalar(v0, v0);
+		float d01 = escalar(v0, v1);
+		float d11 = escalar(v1, v1);
+		float d20 = escalar(v2, v0);
+		float d21 = escalar(v2, v1);
+		float denom = d00 * d11 - d01 * d01;
+		float v = (d11 * d20 - d01 * d21) / denom;
+		float w = (d00 * d21 - d01 * d20) / denom;
+		float u = 1.0f - v - w;
+
+		Vetor coorBar;
+		coorBar.x = v;
+		coorBar.y = w;
+		coorBar.z = u;
+		return coorBar;	
+	}
+
+	Vetor normal(Ponto p, Face f){
+
+		Vetor cBari = coordBaricentricas(p, f);
+
+		Vetor normal;
+		normal.x = f.n1.x*cBari.x + f.n2.x*cBari.y + f.n3.x*cBari.z;
+		normal.y = f.n1.y*cBari.x + f.n2.y*cBari.y + f.n3.y*cBari.z;
+		normal.z = f.n1.z*cBari.x + f.n2.z*cBari.y + f.n3.z*cBari.z;
+
+		return normal;
 	}
 
 };
