@@ -8,11 +8,9 @@
 
 using namespace std;
 
-
-class Color{
+class Vetor{
 public:
-	float r, g, b;
-
+	float x, y, z;
 };
 
 class Ponto{
@@ -21,80 +19,16 @@ public:
 
 };
 
-class Camera{
-public:
-	float x, y, z;
-
-};
-
-class Cena{
-public:
-	Color background;
-};
-
-class Janela{
-public:
-	float x0, y0, x1, y1, sizeX, sizeY;
-};
-
-class Luz{
-public:
-	Ponto ponto;
-	Color cor;
-};
-
-class Vetor{
-public:
-	float x, y, z;
-};
-
 class Vertice{
 public:
-	Vetor normal;
 	Ponto ponto;
-	
 };
 
 class Face{
 public:
 	int v1, v2, v3;
+	Vetor n1, n2, n3;
 };
-
-class Objeto{
-public:
-	Color cor;
-	float ka, kd, ks, kt, coeficienteEspecular;
-	vector<Vertice> vertices;
-	vector<Face> triangulos;
-
-	//void addVertice(float xV, float yV, float zV){
-	//	Vertice vertice;
-	//	vertice.x = xV;
-	//	vertice.y = yV;
-	//	vertice.z = zV;
-	//	//adiciona um vertice a lista de vertices do objeto
-	//	vertices.push_back(vertice);
-	//}
-
-	//void addTriangulo(int v1, int v2, int v3){
-	//	Face triangulo;
-	//	triangulo.v1 = v1;
-	//	triangulo.v2 = v2;
-	//	triangulo.v3 = v3;
-
-	//	//adiciona um triangula a lista de triangulos do objeto
-	//	triangulos.push_back(triangulo);
-	//}
-
-};
-
-class Raio{
-public:
-	Ponto posicao;
-	Ponto direcao;
-	int tamanho;//TODO: necessario?
-};
-
 
 
 //Funcoes matematicas importantes
@@ -133,7 +67,7 @@ Vetor normalizar(Vetor vetor){
 Vetor calcularNormal(Ponto p1, Ponto p2, Ponto p3){
 	Vetor vetor1;
 	Vetor vetor2;
-	vetor1.x= p3.x - p1.x;
+	vetor1.x = p3.x - p1.x;
 	vetor1.y = p3.y - p1.y;
 	vetor1.z = p3.z - p1.z;
 
@@ -144,6 +78,80 @@ Vetor calcularNormal(Ponto p1, Ponto p2, Ponto p3){
 	//cout<<"saiu calcula normal"<<endl;
 	return vetorial(vetor1, vetor2);
 }
+
+
+class Color{
+public:
+	float r, g, b;
+
+};
+
+class Camera{
+public:
+	float x, y, z;
+
+};
+
+class Cena{
+public:
+	Color background;
+};
+
+class Janela{
+public:
+	float x0, y0, x1, y1, sizeX, sizeY;
+};
+
+class Luz{
+public:
+	Ponto ponto;
+	Color cor;
+};
+
+
+class Objeto{
+public:
+	Color cor;
+	float ka, kd, ks, kt, coeficienteEspecular;
+	vector<Vertice> vertices;
+	vector<Face> faces;
+
+	//void addVertice(float xV, float yV, float zV){
+	//	Vertice vertice;
+	//	vertice.x = xV;
+	//	vertice.y = yV;
+	//	vertice.z = zV;
+	//	//adiciona um vertice a lista de vertices do objeto
+	//	vertices.push_back(vertice);
+	//}
+
+	//void addTriangulo(int v1, int v2, int v3){
+	//	Face triangulo;
+	//	triangulo.v1 = v1;
+	//	triangulo.v2 = v2;
+	//	triangulo.v3 = v3;
+
+	//	//adiciona um triangula a lista de triangulos do objeto
+	//	triangulos.push_back(triangulo);
+	//}
+
+	void normalFaces(){
+		for (int i = 0; i < faces.size(); i++)
+		{
+			faces.at(i).n1 = calcularNormal(vertices.at(faces.at(i).v1-1).ponto, vertices.at(faces.at(i).v2-1).ponto, vertices.at(faces.at(i).v3-1).ponto);
+			faces.at(i).n2 = calcularNormal(vertices.at(faces.at(i).v2-1).ponto, vertices.at(faces.at(i).v1-1).ponto, vertices.at(faces.at(i).v3-1).ponto);
+			faces.at(i).n3 = calcularNormal(vertices.at(faces.at(i).v3-1).ponto, vertices.at(faces.at(i).v1-1).ponto, vertices.at(faces.at(i).v2-1).ponto);
+		}
+	}
+
+};
+
+class Raio{
+public:
+	Ponto posicao;
+	Ponto direcao;
+	int tamanho;//TODO: necessario?
+};
 
 
 bool lerObjeto(const char* path, vector<Vertice> &out_vertices, vector<Face> &out_faces){

@@ -164,6 +164,10 @@ int main(int argc, char **argv)
 	vector<Vertice> vertices;
 	vector<Face> faces;
 	lerObjeto("cornel_box\\back.obj", vertices, faces);
+	Objeto o;
+	o.vertices = vertices;
+	o.faces = faces;
+	o.normalFaces();
 
 
 	//Initiating glut variables
