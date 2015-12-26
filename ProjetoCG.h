@@ -95,6 +95,10 @@ public:
 class Cena{
 public:
 	Color background;
+	float ambiente;
+	int npaths;
+	float tonemapping;
+	int seed;
 };
 
 class Janela{
@@ -106,34 +110,17 @@ class Luz{
 public:
 	Ponto ponto;
 	Color cor;
+	float Ip;
 };
 
 
 class Objeto{
 public:
+	char path[100];
 	Color cor;
 	float ka, kd, ks, kt, coeficienteEspecular;
 	vector<Vertice> vertices;
 	vector<Face> faces;
-
-	//void addVertice(float xV, float yV, float zV){
-	//	Vertice vertice;
-	//	vertice.x = xV;
-	//	vertice.y = yV;
-	//	vertice.z = zV;
-	//	//adiciona um vertice a lista de vertices do objeto
-	//	vertices.push_back(vertice);
-	//}
-
-	//void addTriangulo(int v1, int v2, int v3){
-	//	Face triangulo;
-	//	triangulo.v1 = v1;
-	//	triangulo.v2 = v2;
-	//	triangulo.v3 = v3;
-
-	//	//adiciona um triangula a lista de triangulos do objeto
-	//	triangulos.push_back(triangulo);
-	//}
 
 	void normalFaces(){
 		for (int i = 0; i < faces.size(); i++)
@@ -152,6 +139,74 @@ public:
 	Ponto direcao;
 	int tamanho;//TODO: necessario?
 };
+
+bool lerCena(const char* path, Camera &camera, Cena &cena, Janela &janela, Luz &luz, vector<Objeto> &listaObjetos){
+	//O método abaixo foi baseado no cógigo encontrado no tutorial de OpenGL:
+	//http://www.opengl-tutorial.org/beginners-tutorials/tutorial-7-model-loading/
+
+	FILE * file = fopen(path, "r");
+	if (file == NULL){
+		printf("Impossible to open the file ! Are you in the right path ? See Tutorial 1 for details\n");
+		getchar();
+		return false;
+	}
+
+	while (1){
+
+		char lineHeader[128];
+		// read the first word of the line
+		int res = fscanf(file, "%s", lineHeader);
+
+		if (res == EOF)
+			break; // EOF = End Of File. Quit the loop.
+
+		// else : parse lineHeader
+
+		if (strcmp(lineHeader, "eye") == 0){
+			fscanf(file, "%f %f %f\n", &camera.x, &camera.y, &camera.z);
+		}
+		else if (strcmp(lineHeader, "size") == 0){
+			fscanf(file, "%f %f\n", &janela.sizeX, &janela.sizeY);
+		
+		}
+		else if (strcmp(lineHeader, "ortho") == 0){
+			fscanf(file, "%f %f %f %f\n", &janela.x0, &janela.y0, &janela.x1, &janela.y1);
+		}
+		else if (strcmp(lineHeader, "background") == 0){
+			fscanf(file, "%f %f %f\n", &cena.background.r, &cena.background.g, &cena.background.b);
+		}
+		else if (strcmp(lineHeader, "ambient") == 0){
+			fscanf(file, "%f\n", &cena.ambiente);
+		}
+		else if (strcmp(lineHeader, "light") == 0){
+			Objeto o;
+			fscanf(file, "%s %f %f %f %f\n", &o.path, &luz.cor.r, &luz.cor.g, &luz.cor.b, &luz.Ip);
+			listaObjetos.push_back(o);
+		}
+		else if (strcmp(lineHeader, "npaths") == 0){
+			fscanf(file, "%i", &cena.npaths);
+		}
+		else if (strcmp(lineHeader, "tonemapping") == 0){
+			fscanf(file, "%f", &cena.tonemapping);
+		}
+		else if (strcmp(lineHeader, "seed") == 0){
+			fscanf(file, "%i", &cena.seed);
+		}
+		else if (strcmp(lineHeader, "object") == 0){
+			Objeto o;
+			fscanf(file, "%s %f %f %f %f %f %f %f %f %f\n", &o.path, &o.cor.r, &o.cor.g, &o.cor.b, &o.ka, &o.kd, &o.ks, &o.kt, &o.coeficienteEspecular);
+			listaObjetos.push_back(o);
+		}
+		else{
+			// Probably a comment, eat up the rest of the line
+			char stupidBuffer[1000];
+			fgets(stupidBuffer, 1000, file);
+		}
+
+	}
+
+	return true;
+}
 
 
 bool lerObjeto(const char* path, vector<Vertice> &out_vertices, vector<Face> &out_faces){

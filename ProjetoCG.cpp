@@ -161,13 +161,20 @@ int main(int argc, char **argv)
 	Luz luz;
 
 	//Loading objects of the scene
+	vector<Objeto> objetos;
 	vector<Vertice> vertices;
 	vector<Face> faces;
-	lerObjeto("cornel_box\\back.obj", vertices, faces);
-	Objeto o;
-	o.vertices = vertices;
-	o.faces = faces;
-	o.normalFaces();
+
+	//Lendo arquivo sdl que descreve a cena utilizada e calculando a normal após
+	lerCena("cornel_box\\cornellroom.sdl",camera,cena,janela,luz,objetos);
+
+	for (int i = 0; i < objetos.size(); i++)
+	{
+		char realPath [100]= "cornel_box\\";
+		strcat(realPath, objetos.at(i).path);
+		lerObjeto(realPath, objetos.at(i).vertices, objetos.at(i).faces);
+		objetos.at(i).normalFaces();
+	}
 
 
 	//Initiating glut variables
