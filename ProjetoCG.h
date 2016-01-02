@@ -46,6 +46,11 @@ public:
 		this->g = g;
 		this->b = b;
 	}
+	Color::Color(Vetor v){
+		this->r = v.x;
+		this->g = v.y;
+		this->b = v.b;
+	}
 	Vetor toVetor();
 };
 

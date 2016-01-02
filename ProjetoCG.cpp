@@ -61,9 +61,7 @@ int rayIntersectsTriangle(float *p, float *d,
 }
 ///------------------------- END OF OTHER PEOPLE'S STUFF-----------------------------------------///
 
-Objeto closestObject(Raio ray, Cena scene){
-	// TODO
-}
+
 
 Vetor Color::toVetor(){
 	Vetor out;
@@ -97,26 +95,55 @@ float rand01(){
 	return ((float)rand() / (RAND_MAX));
 }
 
-Color trace_path(int depth, Raio ray, Cena scene){
-	if (depth == 5) return scene.background;
+class Intersection {
+public:
+	Objeto objeto;
+	Ponto p;
+	Vetor normal;
+private:
+	Face f;
+};
+
+Intersection closestObject(Raio ray, Cena scene){
+	// TODO
+}
+
+Color trace_path(int depth, Raio ray, Cena scene, Luz luz){
+	if (depth >= 5) return scene.background;
 
 	Color output;
 
 	// --------------------------check intersections--------------------------
 	// ray intersects triangle for each triangle. Get the one closest to the eye that returns true.
-	Objeto closest; // TODO
-	Vetor normal, toLight;
+	Intersection intersection = closestObject(ray, scene);
+	Objeto closest = intersection.objeto;
+	Ponto inters = intersection.p;
+	Vetor normal = intersection.normal;
+	Vetor toLight = mkvec(luz.ponto, inters);
 	float kd = closest.kd, ks = closest.ks, kt = closest.kt;
-	Ponto inters;
+	
+	
 	// ---------------------------color calculation----------------------------
-	float iA;
-	// TODO: Ia = scene->ambiente
+	//Rambiente = Ia*kar
+	float iA = scene.ambiente;
 	Vetor ambiente = kprod(iA*closest.ka, closest.cor.toVetor());
-	Luz l;
-	// TODO:l = scene.luz
-	int lintensidade; Ponto normal;// TODO : temp
 
-	Color difusa = difuso(lintensidade, closest.kd, mkvec(l.ponto, inters), normal);
+	//Rdifuso = Ip*kd(L.N)r
+	Color difusa = difuso(luz.Ip, closest.kd, toLight, normal);
+
+	//Respecular = Ip*ks*(R.V)^n
+	Vetor rVetor = kprod(2 * escalar(normal, toLight), normal);
+	rVetor = normalizar(rVetor);
+	Vetor vVetor = kprod(-1, ray.direcao);
+	vVetor = normalizar(vVetor);
+	Color especular;
+	float aux = pow(escalar(rVetor, vVetor), closest.coeficienteEspecular);
+	aux = luz.Ip*closest.ks*aux;
+	especular.r = luz.cor.r*aux;
+	especular.g = luz.cor.g*aux;
+	especular.b = luz.cor.b*aux;
+
+	Color corLocal = csum(csum(difusa, Color(ambiente)), especular);
 
 
 	// -------------------------recursion for contribution from other objects---------------------------------
@@ -153,6 +180,7 @@ Color trace_path(int depth, Raio ray, Cena scene){
 		// TODO
 		// objeto opaco? nenhuma cor transmitida
 		// caso contrario... verificar refracao
+		depth = 5;
 	}
 
 	// Use the direction and position vector to make a ray
@@ -160,11 +188,14 @@ Color trace_path(int depth, Raio ray, Cena scene){
 	novoRaio.direcao = direcao;
 	novoRaio.posicao = posicao;
 
-	Color recursion = trace_path(depth + 1, novoRaio, scene);
+	Color recursion = trace_path(depth + 1, novoRaio, scene, luz);
 
 	// -----------------------------------output--------------------------------------
-
-
+	output = csum(recursion, corLocal);
+	output.r /= 2;
+	output.g /= 2;
+	output.b /= 2;
+	return output;
 }
 
 Raio cameraRay(int x, int y, Janela jan, Camera c){
@@ -195,7 +226,7 @@ Raio cameraRay(int x, int y, Janela jan, Camera c){
 	return output;
 }
 
-Color** render(Janela jan, Cena scene, Camera c){
+Color** render(Janela jan, Cena scene, Camera c, Luz luz){
 	/*
 	* Render a image using the path tracing algorithm for the given scene, camera and window.
 	*/
@@ -222,7 +253,7 @@ Color** render(Janela jan, Cena scene, Camera c){
 			ray = cameraRay(i, j, jan, c);
 			for (int k = 0; k < nSamples; k++)
 			{
-				sample = trace_path(0, ray, scene);
+				sample = trace_path(0, ray, scene, luz);
 				sum = csum(sum, sample);				
 			}
 			img[i][j] = Color(sum.r/nSamples, sum.g/nSamples, sum.b/nSamples);
