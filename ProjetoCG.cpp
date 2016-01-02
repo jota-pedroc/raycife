@@ -1,7 +1,7 @@
 // ProjetoCG.cpp : Defines the entry point for the console application.
 //
 
-#include "../raycife/stdafx.h"
+#include "stdafx.h"
 #include "ProjetoCG.h"
 #include <iostream>
 #include <fstream>
@@ -72,28 +72,17 @@ Vetor Color::toVetor(){
 	out.z = this->b;
 }
 
-Vetor kprod(float k, Vetor c){
-	Vetor out;
-	out.x = c.x*k;
-	out.y = c.y*k;
-	out.z = c.z*k;
-	return out;
-}
 
-float dprod(Vetor c1, Vetor c2){
-	return c1.x*c2.x + c1.y*c2.y + c1.z*c2.z;
-}
 
-Color csum(Color c1, Color c2){
-	Color output;
-	output.r = c1.r + c2.r;
-	output.g = c1.g + c2.g;
-	output.b = c1.b + c2.b;
-	return output;
-}
+Color difuso(float ip, float kd, Vetor lightDir, Vetor normal);
 
-Color difuso(float ip, float kd, Vetor lightDir, Vetor normal){
+void renderScene(void)
+{
 
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glClearColor(1.0, 0.0, 0.0, 1.0);//clear red
+
+	glutSwapBuffers();
 }
 
 Vetor mkvec(Ponto p, Ponto q){
@@ -156,7 +145,7 @@ Color trace_path(int depth, Raio ray, Cena scene){
 	else if (r < kd + ks){
 		// raio especular
 		// direcao: R=2N(NL) - L
-		direcao = kprod(2 * dprod(normal, toLight), normal);
+		direcao = kprod(2 * escalar(normal, toLight), normal);
 
 	}
 	else {
@@ -243,12 +232,49 @@ Color** render(Janela jan, Cena scene, Camera c){
 	return img;
 }
 
-
-int _tmain(int argc, _TCHAR* argv[])
+int main(int argc, char **argv)
 {
+	//Loading camera paramenters
+	Camera camera;
+
+	//Loading view paramenters
+	Janela janela;
+
+	//Loading scene paramenters
+	Cena cena;
+
+	//Loading illumination paramenters
+	Luz luz;
+
+	//Loading objects of the scene
+	vector<Objeto> objetos;
 	vector<Vertice> vertices;
-	vector<Face> triangulos;
-	lerObjeto("cornelbox\\back.obj", vertices,triangulos);
+	vector<Face> faces;
+
+	//Lendo arquivo sdl que descreve a cena utilizada e calculando a normal após
+	lerCena("cornel_box\\cornellroom.sdl",camera,cena,janela,luz,objetos);
+
+	for (int i = 0; i < objetos.size(); i++)
+	{
+		char realPath [100]= "cornel_box\\";
+		strcat(realPath, objetos.at(i).path);
+		lerObjeto(realPath, objetos.at(i).vertices, objetos.at(i).faces);
+		objetos.at(i).normalFaces();
+	}
+
+
+	//Initiating glut variables
+	glutInit(&argc, argv);
+	glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGBA);
+	glutInitWindowPosition(500, 500);//optional
+	glutInitWindowSize(800, 600); //optional
+	glutCreateWindow("OpenGL First Window");
+	glEnable(GL_DEPTH_TEST);
+
+	// register callbacks
+	glutDisplayFunc(renderScene);
+
+	glutMainLoop();
 
 	
 	return 0;
