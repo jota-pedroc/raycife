@@ -61,80 +61,187 @@ int rayIntersectsTriangle(float *p, float *d,
 }
 ///------------------------- END OF OTHER PEOPLE'S STUFF-----------------------------------------///
 
-int* pixel(Camera c, Ponto p, Janela j){
-	/* dado um ponto qualquer na cena, em qual pixel o observador o enxerga?
-	* R: ponto de interseção do raio Ponto-Camera (reta r) com a janela
-	* 
-	* São paralelos? Se sim, não visível. (Provavelmente não vai acontecer se a janlea/camera estiverem configurados certo)
-	* Caso contrario:
-	* Reta r: P = P + t(C-P) 
-	* (x,y,z) = (x0,y0,z0) + t(a,b,c)
+Objeto closestObject(Raio ray, Cena scene){
+	// TODO
+}
 
-	* sabemos que a janela tem z = 0, como queremos a interseção, podemos substituir:
-	* z = z0 + tc -> 0 = z0 + tc -> t = (-z0)/c
-	* Dai tem-se que x e y são:
-	* x = x0 + ta
-	* y = y0 + tb
-	*
-	* See x e y estiverem dentro da janela, o ponto é visivel e x,y são as coordenadas dele na tela.
-	*/
+Vetor Color::toVetor(){
+	Vetor out;
+	out.x = this->r;
+	out.y = this->g;
+	out.z = this->b;
+}
 
-	float t, x, y;
-	t = -(p.z) / (c.z - p.z);
-	x = p.x + t*(c.x - p.x);
-	y = p.y + t*(c.y - p.y);
+Vetor kprod(float k, Vetor c){
+	Vetor out;
+	out.x = c.x*k;
+	out.y = c.y*k;
+	out.z = c.z*k;
+	return out;
+}
 
-	if ((x >= j.x0 && x <= j.x1) && (y >= j.y0 && y <= j.y1)){
-		// visivel
-		int output[2] = {int(x), int(y)};
-		return output;
-	}
-	else {
-		// nao visivel
-		int output[2] = { -1, -1 };
-		return output;
-	}
+float dprod(Vetor c1, Vetor c2){
+	return c1.x*c2.x + c1.y*c2.y + c1.z*c2.z;
+}
+
+Color csum(Color c1, Color c2){
+	Color output;
+	output.r = c1.r + c2.r;
+	output.g = c1.g + c2.g;
+	output.b = c1.b + c2.b;
+	return output;
+}
+
+Color difuso(float ip, float kd, Vetor lightDir, Vetor normal){
 
 }
 
-Color prod(float k, Color c){
-
+Vetor mkvec(Ponto p, Ponto q){
+	Vetor out;
+	out.x = p.x - q.x;
+	out.y = p.y - q.y;
+	out.z = p.z - q.z;
+	return out;
 }
 
-Color difuso(float ip, float kd, Ponto lightDir, Ponto normal){
-
+float rand01(){
+	return ((float)rand() / (RAND_MAX));
 }
 
-Ponto vdif(Ponto p, Ponto q){
+Color trace_path(int depth, Raio ray, Cena scene){
+	if (depth == 5) return scene.background;
 
-}
-
-Color* trace_path(int depth, Raio* ray, Cena* scene){
-	if (depth == 0) return &(scene->background);
-
-	Color* output = nullptr;
+	Color output;
 
 	// --------------------------check intersections--------------------------
 	// ray intersects triangle for each triangle. Get the one closest to the eye that returns true.
-	Objeto closest;
+	Objeto closest; // TODO
+	Vetor normal, toLight;
+	float kd = closest.kd, ks = closest.ks, kt = closest.kt;
 	Ponto inters;
 	// ---------------------------color calculation----------------------------
 	float iA;
 	// TODO: Ia = scene->ambiente
-	Color ambiente = prod(iA*closest.ka, closest.cor);
+	Vetor ambiente = kprod(iA*closest.ka, closest.cor.toVetor());
 	Luz l;
 	// TODO:l = scene.luz
 	int lintensidade; Ponto normal;// TODO : temp
 
-	Color difusa = difuso(lintensidade, closest.kd, vdif(l.ponto, inters), normal);
+	Color difusa = difuso(lintensidade, closest.kd, mkvec(l.ponto, inters), normal);
 
 
-	// -------------------------recursion for contribution on other objects---------------------------------
-	
+	// -------------------------recursion for contribution from other objects---------------------------------
+	float ktot = kd + ks + kt;
+	float r = rand01()*ktot;
+	Vetor direcao, posicao;
+	if (r < kd){
+		// raio difuso
+		//phi=cos-1 (sqrt(R1)) e theta = 2.pi.R2.
+		float r2 = rand01();
+		float theta = 2 * PI * r2;
+		float r1 = rand01();
+		float phi = acos(sqrt(r1));
+
+		// build the direction vector with phi and theta
+		// Normalized v!!
+		// x = cos phi
+		// y = sen phi
+		// z = sen theta
+		direcao.x = cos(phi);
+		direcao.y = sin(phi);
+		direcao.z = sin(theta);
+		
+		// the position vector is the intersection point		
+	}
+	else if (r < kd + ks){
+		// raio especular
+		// direcao: R=2N(NL) - L
+		direcao = kprod(2 * dprod(normal, toLight), normal);
+
+	}
+	else {
+		// raio transmitido
+		// TODO
+		// objeto opaco? nenhuma cor transmitida
+		// caso contrario... verificar refracao
+	}
+
+	// Use the direction and position vector to make a ray
+	Raio novoRaio;
+	novoRaio.direcao = direcao;
+	novoRaio.posicao = posicao;
+
+	Color recursion = trace_path(depth + 1, novoRaio, scene);
 
 	// -----------------------------------output--------------------------------------
+
+
 }
 
+Raio cameraRay(int x, int y, Janela jan, Camera c){
+	/* 
+	* Trace a ray from the camera to the pixel (x,y) on the window 
+	*/
+
+	Raio output; // Output variable
+	float xw, yw, zw, sizexw, sizeyw; // Pixel location and window size on world coordinates
+	Vetor direcao, posicao; // Ray's direction and position
+
+	sizexw = jan.x1 - jan.x0;
+	sizeyw = jan.y1 - jan.y0;
+	xw = ((float)x / jan.sizeX)*sizexw + jan.x0;
+	yw = ((float)y / jan.sizeY)*sizeyw + jan.y0;
+	zw = 0;
+
+	posicao.x = c.x;
+	posicao.y = c.y;
+	posicao.z = c.z;
+	
+	direcao.x = xw - c.x;
+	direcao.y = yw - c.y;
+	direcao.z = zw - c.z;
+	
+	output.posicao = posicao;
+	output.direcao = direcao;
+	return output;
+}
+
+Color** render(Janela jan, Cena scene, Camera c){
+	/*
+	* Render a image using the path tracing algorithm for the given scene, camera and window.
+	*/
+
+	int xsize = jan.sizeX; // width in pixels
+	int ysize = jan.sizeY; // height in pixels
+	int nSamples = 5; // number of color samples per pixel
+	Color** img; // output img
+	Color sum, sample; // Acumulator and sample variables, used for each different pixel and pixel sample, respectively
+	Raio ray; // Camera to window variable, used for each different pixel
+
+	img = (Color**) malloc(sizeof(Color*)*xsize); // Array instanciation	
+
+	//-----------------------------------------------MAIN LOOP----------------------------------------------
+	// For each pixel, take nSample of colors and average them. The average is the color of that pixel.
+	for (int i = 0; i < xsize; i++)
+	{
+		img[i] = (Color*) malloc(sizeof(Color)*ysize); // Array instanciation
+		for (int j = 0; j < ysize; j++)
+		{
+			sum.r = 0;
+			sum.g = 0;
+			sum.b = 0;
+			ray = cameraRay(i, j, jan, c);
+			for (int k = 0; k < nSamples; k++)
+			{
+				sample = trace_path(0, ray, scene);
+				sum = csum(sum, sample);				
+			}
+			img[i][j] = Color(sum.r/nSamples, sum.g/nSamples, sum.b/nSamples);
+		}
+	}
+
+	return img;
+}
 
 
 int _tmain(int argc, _TCHAR* argv[])

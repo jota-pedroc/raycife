@@ -1,9 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <vector>
+#include <cmath>
 #include "../raycife/Lib/glew/glew.h"
 #include "../raycife/Lib/freeglut/freeglut.h"
 
+# define PI           3.14159265358979323846
 
 using namespace std;
 
@@ -11,6 +13,19 @@ using namespace std;
 class Color{
 public:
 	float r, g, b;
+
+	Color::Color(){
+		this->r = 0;
+		this->g = 0;
+		this->b = 0;
+	}
+	Color::Color(float r, float g, float b){
+		this->r = r;
+		this->g = g;
+		this->b = b;
+	}
+	Vetor toVetor();
+	
 
 };
 
@@ -107,12 +122,20 @@ public:
 
 };
 
+class Vetor{
+public:
+	float x;
+	float y;
+	float z;
+};
+
 class Raio{
 public:
-	Ponto posicao;
-	Ponto direcao;
+	Vetor posicao;
+	Vetor direcao;
 	int tamanho;//TODO: necessario?
 };
+
 
 
 bool lerObjeto(const char* path, vector<Vertice> &out_vertices, vector<Face> &out_faces){
