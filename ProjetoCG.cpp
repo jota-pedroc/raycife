@@ -80,7 +80,16 @@ vector<Objeto> objetos;
 //
 
 
-Color difuso(float ip, float kd, Vetor lightDir, Vetor normal);
+Color difuso(float ip, float kd, Vetor lightDir, Vetor normal, Color corObjeto){
+
+	Color retorno;
+
+	retorno.r = ip*kd*escalar(lightDir, normal)*corObjeto.r; 
+	retorno.g = ip*kd*escalar(lightDir, normal)*corObjeto.g;
+	retorno.b = ip*kd*escalar(lightDir, normal)*corObjeto.b;
+	
+	return retorno;
+};
 
 
 float rand01(){
@@ -123,10 +132,12 @@ Color trace_path(int depth, Raio ray, Cena scene, Luz luz){
 	Vetor ambiente = kprod(iA*closest.ka, closest.cor.toVetor());
 
 	//Rdifuso = Ip*kd(L.N)r
-	Color difusa = difuso(luz.Ip, closest.kd, toLight, normal);
+	Color difusa = difuso(luz.Ip, closest.kd, toLight, normal, closest.cor);
 
 	//Respecular = Ip*ks*(R.V)^n
-	Vetor rVetor = kprod(2 * escalar(normal, toLight), normal);
+
+	
+	Vetor rVetor =subVetor(kprod(2 * escalar(normal, toLight), normal), toLight);
 	rVetor = normalizar(rVetor);
 	Vetor vVetor = kprod(-1, ray.direcao);
 	vVetor = normalizar(vVetor);
@@ -166,7 +177,7 @@ Color trace_path(int depth, Raio ray, Cena scene, Luz luz){
 	else if (r < kd + ks){
 		// raio especular
 		// direcao: R=2N(NL) - L
-		direcao = kprod(2 * escalar(normal, toLight), normal);
+		direcao = subVetor(kprod(2 * escalar(normal, toLight), normal), toLight);
 
 	}
 	else {
@@ -185,6 +196,7 @@ Color trace_path(int depth, Raio ray, Cena scene, Luz luz){
 	Color recursion = trace_path(depth + 1, novoRaio, scene, luz);
 
 	// -----------------------------------output--------------------------------------
+	//*****Testar diferentes pesos*****
 	output = csum(recursion, corLocal);
 	output.r /= 2;
 	output.g /= 2;
@@ -288,13 +300,13 @@ void renderScene()
 	glColor3f(0, 0, 0);
 
 	//pixel width
-	for (int i = 0; i < 800; i++)
+	for (int i = 0; i < window_width; i++)
 	{
 		//pixel height
-		for (int j = 0; j < 600; j++)
+		for (int j = 0; j < window_height; j++)
 		{
 				glBegin(GL_POINTS);
-				glColor3ub(buf.buffer[i][j].r, buf.buffer[i][j].g, buf.buffer[i][j].b); //Modificar para receber do path tracing no buffer
+				glColor3ub(buf.buffer[i][j].r, buf.buffer[i][j].g, buf.buffer[i][j].b); 
 				glVertex2d((i) / 400.f - 1, 1 - (j) / 300.f);
 				glEnd();
 		}
@@ -317,25 +329,12 @@ int main(int argc, char **argv)
 		objetos.at(i).normalVertice();
 	}
 
-	////Inicializando o buffer que ira conter a cor de cada pixel (mudar para ser o background ou nada)
-	//for (int  i = 0; i < 800; i++)
-	//{
-	//	for (int j = 0; j < 600; j++)
-	//	{
-	//		if (i<400){
-	//			buf.buffer[i][j].r = 255;
-	//			buf.buffer[i][j].g = 255;
-	//			buf.buffer[i][j].b = 255;
-	//		}
-	//		else{
-	//			buf.buffer[i][j].r = 0;
-	//			buf.buffer[i][j].g = 0;
-	//			buf.buffer[i][j].b = 0;
-	//		}
-	//	}
-	//}
+	//Chamando o algoritmos de renderização que inclui o Path Tracing
+	buf.buffer = render(janela,cena,olho,luz);
 
 
+
+	///////////////////////////////////////////OPENGL//////////////////////////////////////////////
 	//Initiating glut variables
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);

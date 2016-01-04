@@ -118,6 +118,15 @@ Vetor kprod(float k, Vetor c){
 	return out;
 }
 
+Vetor subVetor(Vetor v1, Vetor v2){
+	Vetor out;
+
+	out.x = v1.x - v2.x;
+	out.y = v1.y - v2.y;
+	out.z = v1.z - v2.z;
+	return out;
+}
+
 //Definindo um vetor a partir de dois pontos
 Vetor defVetor(Ponto ponto1, Ponto ponto2){
 	Vetor retorno;
@@ -259,7 +268,7 @@ public:
 class Buffer{
 public:
 
-	Color buffer[800][600];
+	Color** buffer;
 };
 
 Ponto pixelParaPonto2d(int i, int j, Janela janela) {
