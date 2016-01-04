@@ -33,6 +33,17 @@ public:
 
 //Funcoes matematicas importantes
 
+//Definindo um vetor a partir de dois pontos
+Vetor defVetor(Ponto ponto1, Ponto ponto2){
+	Vetor retorno;
+
+	retorno.x = ponto2.x - ponto1.x;
+	retorno.y = ponto2.y - ponto1.y;
+	retorno.z = ponto2.z - ponto1.z;
+
+	return retorno;
+};
+
 //Produto Escalar
 float escalar(Vetor vetor1, Vetor vetor2){
 	float  escalar = vetor1.x*vetor2.x + vetor1.y*vetor2.y + vetor1.z*vetor2.z;
@@ -86,10 +97,9 @@ public:
 
 };
 
-class Camera{
+class Olho{
 public:
 	float x, y, z;
-
 };
 
 class Cena{
@@ -122,7 +132,7 @@ public:
 	vector<Vertice> vertices;
 	vector<Face> faces;
 
-	void normalFaces(){
+	void normalVertice(){
 		for (int i = 0; i < faces.size(); i++)
 		{
 			faces.at(i).n1 = calcularNormal(vertices.at(faces.at(i).v1-1).ponto, vertices.at(faces.at(i).v2-1).ponto, vertices.at(faces.at(i).v3-1).ponto);
@@ -131,9 +141,11 @@ public:
 		}
 	}
 
-	//Essa retorna alfa, beta e gama das coordenadas baricentricas
+	
 	Vetor coordBaricentricas(Ponto p, Face f)
 	{
+		//Essa retorna alfa, beta e gama das coordenadas baricentricas
+		//Código baseado no livro Christer Ericson's Real-Time Collision Detection
 		float xa= vertices.at(f.v1 - 1).ponto.x;
 		float xb = vertices.at(f.v2 - 1).ponto.x;
 		float xc = vertices.at(f.v3 - 1).ponto.x;
@@ -176,7 +188,7 @@ public:
 		return coorBar;	
 	}
 
-	Vetor normal(Ponto p, Face f){
+	Vetor normalPonto(Ponto p, Face f){
 
 		Vetor cBari = coordBaricentricas(p, f);
 
@@ -193,11 +205,37 @@ public:
 class Raio{
 public:
 	Ponto posicao;
-	Ponto direcao;
+	Vetor direcao;
 	int tamanho;//TODO: necessario?
 };
 
-bool lerCena(const char* path, Camera &camera, Cena &cena, Janela &janela, Luz &luz, vector<Objeto> &listaObjetos){
+class Buffer{
+public:
+
+	Color buffer[800][600];
+};
+
+Ponto pixelParaPonto2d(int i, int j, Janela janela) {
+	//baseado no projeto Raycife de Ermano Arruda (eaa3)
+	Ponto retorno;
+	float larguraPixel;
+	if (janela.x1 > janela.x0) larguraPixel = (janela.x1 - janela.x0) / janela.sizeX;
+	else larguraPixel = (janela.x0 - janela.x1) / janela.sizeX;
+
+	float alturaPixel;
+	if (janela.y1 > janela.y0) alturaPixel = (janela.y1 - janela.y0) / janela.sizeY;
+	else alturaPixel = (janela.y0 - janela.y1) / janela.sizeY;
+
+	retorno.x = (janela.x0 + larguraPixel / 2) + (j * larguraPixel);
+	retorno.y = (janela.y1 - alturaPixel / 2) - (i * alturaPixel);
+	retorno.z = 0;
+
+	return retorno;
+}
+
+
+
+bool lerCena(const char* path, Olho &olho, Cena &cena, Janela &janela, Luz &luz, vector<Objeto> &listaObjetos){
 	//O método abaixo foi baseado no cógigo encontrado no tutorial de OpenGL:
 	//http://www.opengl-tutorial.org/beginners-tutorials/tutorial-7-model-loading/
 
@@ -220,7 +258,7 @@ bool lerCena(const char* path, Camera &camera, Cena &cena, Janela &janela, Luz &
 		// else : parse lineHeader
 
 		if (strcmp(lineHeader, "eye") == 0){
-			fscanf(file, "%f %f %f\n", &camera.x, &camera.y, &camera.z);
+			fscanf(file, "%f %f %f\n", &olho.x, &olho.y, &olho.z);
 		}
 		else if (strcmp(lineHeader, "size") == 0){
 			fscanf(file, "%f %f\n", &janela.sizeX, &janela.sizeY);
@@ -264,7 +302,6 @@ bool lerCena(const char* path, Camera &camera, Cena &cena, Janela &janela, Luz &
 
 	return true;
 }
-
 
 bool lerObjeto(const char* path, vector<Vertice> &out_vertices, vector<Face> &out_faces){
 	//O método abaixo foi baseado no cógigo encontrado no tutorial de OpenGL:
