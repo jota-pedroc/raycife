@@ -7,89 +7,81 @@
 #include <fstream>
 #include <string>
 
+Buffer buf;
+static GLfloat window_width = 800.0;
+static GLfloat window_height = 600.0;
 
+//Loading camera paramenters
+Olho olho;
+
+//Loading view paramenters
+Janela janela;
+
+//Loading scene paramenters
+Cena cena;
+
+//Loading illumination paramenters
+Luz luz;
+
+//Loading objects of the scene
+vector<Objeto> objetos;
 
 ///-------------------------OTHER PEOPLE'S STUFF-----------------------------------------///
 //http://www.lighthouse3d.com/tutorials/maths/ray-triangle-intersection/
 //http://www.cs.virginia.edu/~gfx/Courses/2003/ImageSynthesis/papers/Acceleration/Fast%20MinimumStorage%20RayTriangle%20Intersection.pdf
 
-// may be worth checking this one too: http://geomalgorithms.com/a06-_intersect-2.html
-/* a = b - c */
-#define vector(a,b,c) \
-	(a)[0] = (b)[0] - (c)[0];	\
-	(a)[1] = (b)[1] - (c)[1];	\
-	(a)[2] = (b)[2] - (c)[2];
-
-int rayIntersectsTriangle(float *p, float *d,
-	float *v0, float *v1, float *v2) {
-
-	float e1[3], e2[3], h[3], s[3], q[3];
-	float a, f, u, v;
-	vector(e1, v1, v0);
-	vector(e2, v2, v0);
-
-	//crossProduct(h, d, e2);
-	//a = innerProduct(e1, h);
-
-	if (a > -0.00001 && a < 0.00001)
-		return(false);
-
-	f = 1 / a;
-	vector(s, p, v0);
-	//u = f * (innerProduct(s, h));
-
-	if (u < 0.0 || u > 1.0)
-		return(false);
-
-	//crossProduct(q, s, e1);
-	//v = f * innerProduct(d, q);
-
-	if (v < 0.0 || u + v > 1.0)
-		return(false);
-
-	// at this stage we can compute t to find out where
-	// the intersection point is on the line
-	//t = f * innerProduct(e2, q);
-
-	//if (t > 0.00001) // ray intersection
-		return(true);
-
-	//else // this means that there is a line intersection
-		// but not a ray intersection
-		return (false);
-
-}
-///------------------------- END OF OTHER PEOPLE'S STUFF-----------------------------------------///
-
-
-
-Vetor Color::toVetor(){
-	Vetor out;
-	out.x = this->r;
-	out.y = this->g;
-	out.z = this->b;
-}
-
+//// may be worth checking this one too: http://geomalgorithms.com/a06-_intersect-2.html
+///* a = b - c */
+//#define vector(a,b,c) \
+//	(a)[0] = (b)[0] - (c)[0];	\
+//	(a)[1] = (b)[1] - (c)[1];	\
+//	(a)[2] = (b)[2] - (c)[2];
+//
+//int rayIntersectsTriangle(float *p, float *d,
+//	float *v0, float *v1, float *v2) {
+//
+//	float e1[3], e2[3], h[3], s[3], q[3];
+//	float a, f, u, v;
+//	vector(e1, v1, v0);
+//	vector(e2, v2, v0);
+//
+//	//crossProduct(h, d, e2);
+//	//a = innerProduct(e1, h);
+//
+//	if (a > -0.00001 && a < 0.00001)
+//		return(false);
+//
+//	f = 1 / a;
+//	vector(s, p, v0);
+//	//u = f * (innerProduct(s, h));
+//
+//	if (u < 0.0 || u > 1.0)
+//		return(false);
+//
+//	//crossProduct(q, s, e1);
+//	//v = f * innerProduct(d, q);
+//
+//	if (v < 0.0 || u + v > 1.0)
+//		return(false);
+//
+//	// at this stage we can compute t to find out where
+//	// the intersection point is on the line
+//	//t = f * innerProduct(e2, q);
+//
+//	//if (t > 0.00001) // ray intersection
+//		return(true);
+//
+//	//else // this means that there is a line intersection
+//		// but not a ray intersection
+//		return (false);
+//
+//}
+/////------------------------- END OF OTHER PEOPLE'S STUFF-----------------------------------------///
+//
 
 
 Color difuso(float ip, float kd, Vetor lightDir, Vetor normal);
 
-void renderScene(void)
-{
-
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	glClearColor(1.0, 0.0, 0.0, 1.0);//clear red
-
-	glutSwapBuffers();
-}
-
-Vetor mkvec(Ponto p, Ponto q){
-	Vetor out;
-	out.x = p.x - q.x;
-	out.y = p.y - q.y;
-	out.z = p.z - q.z;
-	return out;
-}
 
 float rand01(){
 	return ((float)rand() / (RAND_MAX));
@@ -106,6 +98,8 @@ private:
 
 Intersection closestObject(Raio ray, Cena scene){
 	// TODO
+	Intersection MEMUDE;
+	return MEMUDE;
 }
 
 Color trace_path(int depth, Raio ray, Cena scene, Luz luz){
@@ -119,7 +113,7 @@ Color trace_path(int depth, Raio ray, Cena scene, Luz luz){
 	Objeto closest = intersection.objeto;
 	Ponto inters = intersection.p;
 	Vetor normal = intersection.normal;
-	Vetor toLight = mkvec(luz.ponto, inters);
+	Vetor toLight = defVetor(luz.ponto, inters);
 	float kd = closest.kd, ks = closest.ks, kt = closest.kt;
 	
 	
@@ -186,7 +180,7 @@ Color trace_path(int depth, Raio ray, Cena scene, Luz luz){
 	// Use the direction and position vector to make a ray
 	Raio novoRaio;
 	novoRaio.direcao = direcao;
-	novoRaio.posicao = posicao;
+//	novoRaio.posicao = posicao;
 
 	Color recursion = trace_path(depth + 1, novoRaio, scene, luz);
 
@@ -198,7 +192,7 @@ Color trace_path(int depth, Raio ray, Cena scene, Luz luz){
 	return output;
 }
 
-Raio cameraRay(int x, int y, Janela jan, Camera c){
+Raio cameraRay(int x, int y, Janela jan, Olho o){
 	/* 
 	* Trace a ray from the camera to the pixel (x,y) on the window 
 	*/
@@ -213,20 +207,20 @@ Raio cameraRay(int x, int y, Janela jan, Camera c){
 	yw = ((float)y / jan.sizeY)*sizeyw + jan.y0;
 	zw = 0;
 
-	posicao.x = c.x;
-	posicao.y = c.y;
-	posicao.z = c.z;
+	posicao.x = o.x;
+	posicao.y = o.y;
+	posicao.z = o.z;
 	
-	direcao.x = xw - c.x;
-	direcao.y = yw - c.y;
-	direcao.z = zw - c.z;
+	direcao.x = xw - o.x;
+	direcao.y = yw - o.y;
+	direcao.z = zw - o.z;
 	
 	output.posicao = posicao;
 	output.direcao = direcao;
 	return output;
 }
 
-Color** render(Janela jan, Cena scene, Camera c, Luz luz){
+Color** render(Janela jan, Cena scene, Olho o, Luz luz){
 	/*
 	* Render a image using the path tracing algorithm for the given scene, camera and window.
 	*/
@@ -250,7 +244,7 @@ Color** render(Janela jan, Cena scene, Camera c, Luz luz){
 			sum.r = 0;
 			sum.g = 0;
 			sum.b = 0;
-			ray = cameraRay(i, j, jan, c);
+			ray = cameraRay(i, j, jan, o);
 			for (int k = 0; k < nSamples; k++)
 			{
 				sample = trace_path(0, ray, scene, luz);
@@ -263,50 +257,99 @@ Color** render(Janela jan, Cena scene, Camera c, Luz luz){
 	return img;
 }
 
+void myinit()
+{
+	//srand(time(NULL));
+	//    estado = MODIFIED;
+
+	//Imagem projetada no near plane sera desenhada na seguinte area da tela: (0,0,width,height)
+	glLoadIdentity();
+	gluOrtho2D(-1, 1, -1, 1);
+	glViewport(0, 0, window_width, window_height);
+
+	//Setando tipo de projecao..
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+
+	//Projecao sera ortogonal
+	//glOrtho(0, window_width, window_height, 0, 0, 5.0);
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
+
+
+	// loop(0);
+}
+
+
+void renderScene()
+{
+	glClearColor(1.0, 1.0, 1.0, 1.0);
+	glClear(GL_COLOR_BUFFER_BIT);
+	glColor3f(0, 0, 0);
+
+	//pixel width
+	for (int i = 0; i < 800; i++)
+	{
+		//pixel height
+		for (int j = 0; j < 600; j++)
+		{
+				glBegin(GL_POINTS);
+				glColor3ub(buf.buffer[i][j].r, buf.buffer[i][j].g, buf.buffer[i][j].b); //Modificar para receber do path tracing no buffer
+				glVertex2d((i) / 400.f - 1, 1 - (j) / 300.f);
+				glEnd();
+		}
+	}
+
+	glFlush();
+}
+
 int main(int argc, char **argv)
 {
-	//Loading camera paramenters
-	Camera camera;
-
-	//Loading view paramenters
-	Janela janela;
-
-	//Loading scene paramenters
-	Cena cena;
-
-	//Loading illumination paramenters
-	Luz luz;
-
-	//Loading objects of the scene
-	vector<Objeto> objetos;
-	vector<Vertice> vertices;
-	vector<Face> faces;
-
 	//Lendo arquivo sdl que descreve a cena utilizada e calculando a normal após
-	lerCena("cornel_box\\cornellroom.sdl",camera,cena,janela,luz,objetos);
+	lerCena("cornel_box\\cornellroom.sdl",olho,cena,janela,luz,objetos);
 
+	//Carregando os objetos no vector de objetos
 	for (int i = 0; i < objetos.size(); i++)
 	{
 		char realPath [100]= "cornel_box\\";
 		strcat(realPath, objetos.at(i).path);
 		lerObjeto(realPath, objetos.at(i).vertices, objetos.at(i).faces);
-		objetos.at(i).normalFaces();
+		objetos.at(i).normalVertice();
 	}
+
+	////Inicializando o buffer que ira conter a cor de cada pixel (mudar para ser o background ou nada)
+	//for (int  i = 0; i < 800; i++)
+	//{
+	//	for (int j = 0; j < 600; j++)
+	//	{
+	//		if (i<400){
+	//			buf.buffer[i][j].r = 255;
+	//			buf.buffer[i][j].g = 255;
+	//			buf.buffer[i][j].b = 255;
+	//		}
+	//		else{
+	//			buf.buffer[i][j].r = 0;
+	//			buf.buffer[i][j].g = 0;
+	//			buf.buffer[i][j].b = 0;
+	//		}
+	//	}
+	//}
 
 
 	//Initiating glut variables
 	glutInit(&argc, argv);
-	glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGBA);
-	glutInitWindowPosition(500, 500);//optional
-	glutInitWindowSize(800, 600); //optional
+	glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
+	glutInitWindowSize(window_width, window_height); //colocar parametros de entrada
+	glutInitWindowPosition(0, 100);//optional
 	glutCreateWindow("OpenGL First Window");
-	glEnable(GL_DEPTH_TEST);
+
 
 	// register callbacks
 	glutDisplayFunc(renderScene);
 
-	glutMainLoop();
+	myinit();
 
+	glutMainLoop();
 	
 	return 0;
 }
