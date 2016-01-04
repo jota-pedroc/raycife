@@ -8,6 +8,7 @@
 #include <string>
 
 Buffer buf;
+//Recebe 800x600 como defalt mas é alterada dependendo do arquivo de entrada
 static GLfloat window_width = 800.0;
 static GLfloat window_height = 600.0;
 
@@ -189,8 +190,8 @@ Color trace_path(int depth, Raio ray, Cena scene, Luz luz){
 	}
 
 	// Use the direction and position vector to make a ray
-	Raio novoRaio;
-	novoRaio.direcao = direcao;
+	Raio novoRaio= Raio();
+//	novoRaio.direcao = direcao;
 //	novoRaio.posicao = posicao;
 
 	Color recursion = trace_path(depth + 1, novoRaio, scene, luz);
@@ -262,7 +263,8 @@ Color** render(Janela jan, Cena scene, Olho o, Luz luz){
 				sample = trace_path(0, ray, scene, luz);
 				sum = csum(sum, sample);				
 			}
-			img[i][j] = Color(sum.r/nSamples, sum.g/nSamples, sum.b/nSamples);
+			//img[i][j] = Color(sum.r/nSamples, sum.g/nSamples, sum.b/nSamples);
+			img[i][j] = Color(255,0, 0);
 		}
 	}
 
@@ -307,7 +309,7 @@ void renderScene()
 		{
 				glBegin(GL_POINTS);
 				glColor3ub(buf.buffer[i][j].r, buf.buffer[i][j].g, buf.buffer[i][j].b); 
-				glVertex2d((i) / 400.f - 1, 1 - (j) / 300.f);
+				glVertex2d((i) / (window_width / 2) - 1, 1 - (j) / (window_height / 2));
 				glEnd();
 		}
 	}
@@ -319,6 +321,9 @@ int main(int argc, char **argv)
 {
 	//Lendo arquivo sdl que descreve a cena utilizada e calculando a normal após
 	lerCena("cornel_box\\cornellroom.sdl",olho,cena,janela,luz,objetos);
+
+	window_height = janela.sizeX;
+	window_width = janela.sizeY;
 
 	//Carregando os objetos no vector de objetos
 	for (int i = 0; i < objetos.size(); i++)
