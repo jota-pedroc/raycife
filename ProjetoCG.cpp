@@ -8,6 +8,7 @@
 #include <string>
 
 Buffer buf;
+//Recebe 800x600 como defalt mas é alterada dependendo do arquivo de entrada
 static GLfloat window_width = 800.0;
 static GLfloat window_height = 600.0;
 
@@ -365,7 +366,7 @@ void renderScene()
 		{
 				glBegin(GL_POINTS);
 				glColor3ub(buf.buffer[i][j].r, buf.buffer[i][j].g, buf.buffer[i][j].b); 
-				glVertex2d((i) / 400.f - 1, 1 - (j) / 300.f);
+				glVertex2d((i) / (window_width / 2) - 1, 1 - (j) / (window_height / 2));
 				glEnd();
 		}
 	}
@@ -377,6 +378,9 @@ int main(int argc, char **argv)
 {
 	//Lendo arquivo sdl que descreve a cena utilizada e calculando a normal após
 	lerCena("cornel_box\\cornellroom.sdl",olho,cena,janela,luz,objetos);
+
+	window_height = janela.sizeX;
+	window_width = janela.sizeY;
 
 	//Carregando os objetos no vector de objetos
 	for (int i = 0; i < objetos.size(); i++)
