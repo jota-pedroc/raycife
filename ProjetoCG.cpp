@@ -32,52 +32,63 @@ vector<Objeto> objetos;
 
 //// may be worth checking this one too: http://geomalgorithms.com/a06-_intersect-2.html
 ///* a = b - c */
-//#define vector(a,b,c) \
-//	(a)[0] = (b)[0] - (c)[0];	\
-//	(a)[1] = (b)[1] - (c)[1];	\
-//	(a)[2] = (b)[2] - (c)[2];
-//
-//int rayIntersectsTriangle(float *p, float *d,
-//	float *v0, float *v1, float *v2) {
-//
-//	float e1[3], e2[3], h[3], s[3], q[3];
-//	float a, f, u, v;
-//	vector(e1, v1, v0);
-//	vector(e2, v2, v0);
-//
-//	//crossProduct(h, d, e2);
-//	//a = innerProduct(e1, h);
-//
-//	if (a > -0.00001 && a < 0.00001)
-//		return(false);
-//
-//	f = 1 / a;
-//	vector(s, p, v0);
-//	//u = f * (innerProduct(s, h));
-//
-//	if (u < 0.0 || u > 1.0)
-//		return(false);
-//
-//	//crossProduct(q, s, e1);
-//	//v = f * innerProduct(d, q);
-//
-//	if (v < 0.0 || u + v > 1.0)
-//		return(false);
-//
-//	// at this stage we can compute t to find out where
-//	// the intersection point is on the line
-//	//t = f * innerProduct(e2, q);
-//
-//	//if (t > 0.00001) // ray intersection
-//		return(true);
-//
-//	//else // this means that there is a line intersection
-//		// but not a ray intersection
-//		return (false);
-//
-//}
-/////------------------------- END OF OTHER PEOPLE'S STUFF-----------------------------------------///
-//
+#define vector(a,b,c) \
+	(a)[0] = (b)[0] - (c)[0];	\
+	(a)[1] = (b)[1] - (c)[1];	\
+	(a)[2] = (b)[2] - (c)[2];
+
+float innerProduct(float* v1, float* v2){
+	return v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2];
+}
+
+//A x B = (a2b3 - a3b2, a3b1 - a1b3, a1b2 - a2b1); a vector quantity
+void crossProduct(float* result, float* v1, float* v2){
+	result[0] = v1[1] * v2[2] - v1[2] * v2[1];
+	result[1] = v1[2] * v2[0] - v1[0] * v2[2];
+	result[2] = v1[0] * v2[1] - v1[1] * v2[0];
+}
+
+int rayIntersectsTriangle(float *p, float *d,
+	float *v0, float *v1, float *v2) {
+
+	float e1[3], e2[3], h[3], s[3], q[3];
+	float a, f, u, v, t;
+	vector(e1, v1, v0);
+	vector(e2, v2, v0);
+
+	crossProduct(h, d, e2);
+	a = innerProduct(e1, h);
+
+	if (a > -0.00001 && a < 0.00001)
+		return(-1);
+
+	f = 1 / a;
+	vector(s, p, v0);
+	u = f * (innerProduct(s, h));
+
+	if (u < 0.0 || u > 1.0)
+		return(-1);
+
+	crossProduct(q, s, e1);
+	v = f * innerProduct(d, q);
+
+	if (v < 0.0 || u + v > 1.0)
+		return(-1);
+
+	// at this stage we can compute t to find out where
+	// the intersection point is on the line
+	t = f * innerProduct(e2, q);
+
+	if (t > 0.00001) // ray intersection
+		return(t);
+	
+	else // this means that there is a line intersection
+		// but not a ray intersection
+		return (-1);
+
+}
+///------------------------- END OF OTHER PEOPLE'S STUFF-----------------------------------------///
+
 
 
 Color difuso(float ip, float kd, Vetor lightDir, Vetor normal, Color corObjeto){
@@ -101,14 +112,60 @@ public:
 	Objeto objeto;
 	Ponto p;
 	Vetor normal;
+	bool hit;
 private:
 	Face f;
 };
 
 Intersection closestObject(Raio ray, Cena scene){
 	// TODO
-	Intersection MEMUDE;
-	return MEMUDE;
+	Intersection out;
+	Objeto current;
+	vector<Face> currentFaces;
+	Face face;
+	float closestz = INT_MIN;
+
+	for (int i = 0; i < objetos.size(); i++)
+	{
+		current = objetos.at(i);
+		currentFaces = current.faces;
+		for (int j = 0; j < currentFaces.size(); j++)
+		{
+			Face f = currentFaces.at(j);
+			Vertice x = current.vertices.at(f.v1-1);
+			float v0[3] = { x.ponto.x, x.ponto.y, x.ponto.z };
+			Vertice y = current.vertices.at(f.v2-1);
+			float v1[3] = { y.ponto.x, y.ponto.y, y.ponto.z };
+			Vertice z = current.vertices.at(f.v3-1);
+			float v2[3] = { z.ponto.x, z.ponto.y, z.ponto.z };
+
+			float p[3] = { ray.posicao.x, ray.posicao.y, ray.posicao.z };
+			float d[3] = { ray.direcao.x, ray.direcao.y, ray.direcao.z };
+			float t = rayIntersectsTriangle(p,d,v0,v1,v2);
+			if (t > 0){
+				float z = ray.direcao.z*t + ray.posicao.z;
+				if (z > closestz){
+					closestz = z;
+					out.objeto = current;
+					out.p.x = ray.direcao.x*t + ray.posicao.x;
+					out.p.y = ray.direcao.y*t + ray.posicao.y;
+					out.p.z = closestz;
+					out.normal = current.normalPonto(out.p, f);
+				}
+			}
+		}
+	}
+
+	if (closestz != INT_MIN){
+		out.hit = true;
+		return out;
+	}
+	else {
+		out.hit = false;
+		return out;
+	}
+
+	
 }
 
 Color trace_path(int depth, Raio ray, Cena scene, Luz luz){
@@ -154,7 +211,7 @@ Color trace_path(int depth, Raio ray, Cena scene, Luz luz){
 	// -------------------------recursion for contribution from other objects---------------------------------
 	float ktot = kd + ks + kt;
 	float r = rand01()*ktot;
-	Vetor direcao, posicao;
+	Vetor direcao = Vetor(), posicao = Vetor();
 	if (r < kd){
 		// raio difuso
 		//phi=cos-1 (sqrt(R1)) e theta = 2.pi.R2.
@@ -191,7 +248,7 @@ Color trace_path(int depth, Raio ray, Cena scene, Luz luz){
 	// Use the direction and position vector to make a ray
 	Raio novoRaio;
 	novoRaio.direcao = direcao;
-//	novoRaio.posicao = posicao;
+	novoRaio.posicao = posicao;
 
 	Color recursion = trace_path(depth + 1, novoRaio, scene, luz);
 
@@ -259,6 +316,7 @@ Color** render(Janela jan, Cena scene, Olho o, Luz luz){
 			ray = cameraRay(i, j, jan, o);
 			for (int k = 0; k < nSamples; k++)
 			{
+				printf("processing pixel (%d,%d), sample #%d\n", i, j, k);
 				sample = trace_path(0, ray, scene, luz);
 				sum = csum(sum, sample);				
 			}
