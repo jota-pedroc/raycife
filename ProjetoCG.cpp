@@ -92,6 +92,10 @@ int rayIntersectsTriangle(float *p, float *d,
 
 
 
+bool retorno = false;
+double dist = INT_MAX;
+double distTemp = -1;
+
 Color difuso(float ip, float kd, Vetor lightDir, Vetor normal, Color corObjeto){
 
 	Color retorno;
@@ -169,6 +173,16 @@ Intersection closestObject(Raio ray, Cena scene){
 	
 }
 
+bool shadowRay(Raio ray, Cena scene){
+	bool retorno = false;
+	Intersection intersection = closestObject(ray, scene);
+	Objeto closest = intersection.objeto;
+
+	if (intersection.hit) retorno = true;
+	return retorno;
+}
+
+
 Color trace_path(int depth, Raio ray, Cena scene, Luz luz){
 	if (depth >= 5) return Color(0,0,0);
 
@@ -196,8 +210,6 @@ Color trace_path(int depth, Raio ray, Cena scene, Luz luz){
 	Color difusa = difuso(luz.Ip, closest.kd, toLight, normal, closest.cor);
 
 	//Respecular = Ip*ks*(R.V)^n
-
-	
 	Vetor rVetor =subVetor(kprod(2 * escalar(normal, toLight), normal), toLight);
 	rVetor = normalizar(rVetor);
 	Vetor vVetor = kprod(-1, ray.direcao);
@@ -209,8 +221,25 @@ Color trace_path(int depth, Raio ray, Cena scene, Luz luz){
 	especular.g = luz.cor.g*aux;
 	especular.b = luz.cor.b*aux;
 
-	Color corLocal = csum(csum(difusa, Color(ambiente)), especular);
+	//Shadow Ray
+	Raio ray2;
+	ray2.direcao = toLight;
+	ray2.posicao.x = inters.x;
+	ray2.posicao.y = inters.y;
+	ray2.posicao.z = inters.z;
 
+	bool sombra = shadowRay(ray2,scene);
+
+	//Definindo o valor da cor local
+	Color corLocal;
+	if (sombra){
+		corLocal.r = 0;
+		corLocal.g = 0;
+		corLocal.b = 0;
+	}else{
+		corLocal = csum(csum(difusa, Color(ambiente)), especular);
+	}
+	
 
 	// -------------------------recursion for contribution from other objects---------------------------------
 	float ktot = kd + ks + kt;
@@ -388,6 +417,9 @@ int main(int argc, char **argv)
 {
 	//Lendo arquivo sdl que descreve a cena utilizada e calculando a normal após
 	lerCena("cornel_box\\cornellroom.sdl",olho,cena,janela,luz,objetos);
+	luz.ponto.x = 0;
+	luz.ponto.y = 3.8360;
+	luz.ponto.z = 25.0f;
 
 	window_height = janela.sizeX;
 	window_width = janela.sizeY;
