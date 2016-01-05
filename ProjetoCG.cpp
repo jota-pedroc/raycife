@@ -306,9 +306,9 @@ Raio cameraRay(int x, int y, Janela jan, Olho o){
 	Vetor direcao, posicao; // Ray's direction and position
 
 	sizexw = jan.x1 - jan.x0;
-	sizeyw = jan.y1 - jan.y0;
+	sizeyw = jan.y0 - jan.y1;
 	xw = ((float)x / jan.sizeX)*sizexw + jan.x0;
-	yw = ((float)y / jan.sizeY)*sizeyw + jan.y0;
+	yw = ((float)y / jan.sizeY)*sizeyw + jan.y1;
 	zw = 0;
 
 	posicao.x = o.x;
