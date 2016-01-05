@@ -196,10 +196,13 @@ Color trace_path(int depth, Raio ray, Cena scene, Luz luz){
 	if (intersection.hit == false){
 		return scene.background;
 	}
+	
 	Objeto closest = intersection.objeto;
 	Ponto inters = intersection.p;
 	Vetor normal = intersection.normal;
-	Vetor toLight = defVetor(luz.ponto, inters);
+	normal = normalizar(normal);
+	Vetor toLight = defVetor(inters, luz.ponto);
+	toLight = normalizar(toLight);
 	float kd = closest.kd, ks = closest.ks, kt = closest.kt;
 	
 	
@@ -421,7 +424,7 @@ void renderScene()
 		for (int j = 0; j < window_height; j++)
 		{
 				glBegin(GL_POINTS);
-				glColor3ub(buf.buffer[i][j].r, buf.buffer[i][j].g, buf.buffer[i][j].b); 
+				glColor3f(buf.buffer[i][j].r, buf.buffer[i][j].g, buf.buffer[i][j].b); 
 				glVertex2d((i) / (window_width / 2) - 1, 1 - (j) / (window_height / 2));
 				glEnd();
 		}
