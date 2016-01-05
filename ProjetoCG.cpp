@@ -6,6 +6,8 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <ctime>
+
 
 Buffer buf;
 //Recebe 800x600 como defalt mas é alterada dependendo do arquivo de entrada
@@ -304,9 +306,9 @@ Raio cameraRay(int x, int y, Janela jan, Olho o){
 	Vetor direcao, posicao; // Ray's direction and position
 
 	sizexw = jan.x1 - jan.x0;
-	sizeyw = jan.y1 - jan.y0;
+	sizeyw = jan.y0 - jan.y1;
 	xw = ((float)x / jan.sizeX)*sizexw + jan.x0;
-	yw = ((float)y / jan.sizeY)*sizeyw + jan.y0;
+	yw = ((float)y / jan.sizeY)*sizeyw + jan.y1;
 	zw = 0;
 
 	posicao.x = o.x;
@@ -329,7 +331,11 @@ Color** render(Janela jan, Cena scene, Olho o, Luz luz){
 
 	int xsize = jan.sizeX; // width in pixels
 	int ysize = jan.sizeY; // height in pixels
+
 	int nSamples =1; // number of color samples per pixel
+
+	float count = 0, maxCount = xsize*ysize*nSamples, blockSize = maxCount / 100, blockCount = blockSize;
+
 	Color** img; // output img
 	Color sum, sample; // Acumulator and sample variables, used for each different pixel and pixel sample, respectively
 	Raio ray; // Camera to window variable, used for each different pixel
@@ -338,6 +344,8 @@ Color** render(Janela jan, Cena scene, Olho o, Luz luz){
 
 	//-----------------------------------------------MAIN LOOP----------------------------------------------
 	// For each pixel, take nSample of colors and average them. The average is the color of that pixel.
+	time_t startTime;
+	time(&startTime);
 	for (int i = 0; i < xsize; i++)
 	{
 		img[i] = (Color*) malloc(sizeof(Color)*ysize); // Array instanciation
@@ -349,9 +357,17 @@ Color** render(Janela jan, Cena scene, Olho o, Luz luz){
 			ray = cameraRay(i, j, jan, o);
 			for (int k = 0; k < nSamples; k++)
 			{
-				//printf("processing pixel (%d,%d), sample #%d\n", i, j, k);
+
 				sample = trace_path(0, ray, scene, luz);
-				sum = csum(sum, sample);				
+				sum = csum(sum, sample);
+				count++;
+				if (count > blockCount){
+					time_t elapsed = time(nullptr) - startTime;
+					//time_t remaining = (elapsed *(1 - (count / maxCount))) / (count / maxCount);
+					printf("Processing... %d%% (%d/%d). Elapsed time: %ds.\n", (int)((count / maxCount) * 100), (int)count, (int) maxCount, elapsed);
+					blockCount += blockSize;
+				}
+				
 			}
 			
 
