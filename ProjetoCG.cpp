@@ -368,8 +368,17 @@ Color** render(Janela jan, Cena scene, Olho o, Luz luz){
 				}
 				
 			}
+			
+
+			Color out = Color(sum.r / nSamples, sum.g / nSamples, sum.b / nSamples);
+			
+			//Applying Tone Mapping 
+			//Color newOut = Color(out.r / (out.r + cena.tonemapping), out.g / (out.g + cena.tonemapping), out.b / (out.b + cena.tonemapping));
+			//img[i][j] = newOut;
+
 			img[i][j] = Color(sum.r/nSamples, sum.g/nSamples, sum.b/nSamples);
 		}
+		printf("processing line (%d)\n", i);
 	}
 
 	return img;
@@ -425,12 +434,13 @@ int main(int argc, char **argv)
 {
 	//Lendo arquivo sdl que descreve a cena utilizada e calculando a normal após
 	lerCena("cornel_box\\cornellroom.sdl",olho,cena,janela,luz,objetos);
+
 	luz.ponto.x = 0;
 	luz.ponto.y = 3.8360;
-	luz.ponto.z = -25.0f;
+	luz.ponto.z = 25.0f;
+	window_height = janela.sizeY;
+	window_width = janela.sizeX;
 
-	window_height = janela.sizeX;
-	window_width = janela.sizeY;
 
 	//Carregando os objetos no vector de objetos
 	for (int i = 0; i < objetos.size(); i++)
