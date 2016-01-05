@@ -383,7 +383,6 @@ Color** render(Janela jan, Cena scene, Olho o, Luz luz){
 
 			img[i][j] = Color(sum.r/nSamples, sum.g/nSamples, sum.b/nSamples);
 		}
-		printf("processing line (%d)\n", i);
 	}
 
 	return img;
