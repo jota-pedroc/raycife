@@ -170,13 +170,16 @@ Intersection closestObject(Raio ray, Cena scene){
 }
 
 Color trace_path(int depth, Raio ray, Cena scene, Luz luz){
-	if (depth >= 5) return scene.background;
+	if (depth >= 5) return Color(0,0,0);
 
 	Color output;
 
 	// --------------------------check intersections--------------------------
 	// ray intersects triangle for each triangle. Get the one closest to the eye that returns true.
 	Intersection intersection = closestObject(ray, scene);
+	if (intersection.hit == false){
+		return scene.background;
+	}
 	Objeto closest = intersection.objeto;
 	Ponto inters = intersection.p;
 	Vetor normal = intersection.normal;
