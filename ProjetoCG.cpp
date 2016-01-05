@@ -188,6 +188,8 @@ bool shadowRay(Raio ray, Cena scene){
 Color trace_path(int depth, Raio ray, Cena scene, Luz luz){
 	if (depth >= 5) return Color(0,0,0);
 
+	//cout << depth << endl;
+
 	Color output;
 
 	// --------------------------check intersections--------------------------
@@ -333,7 +335,7 @@ Color** render(Janela jan, Cena scene, Olho o, Luz luz){
 
 	int xsize = jan.sizeX; // width in pixels
 	int ysize = jan.sizeY; // height in pixels
-	int nSamples = scene.npaths; // number of color samples per pixel
+	int nSamples = 20; // number of color samples per pixel
 	float count = 0, maxCount = xsize*ysize*nSamples, blockSize = maxCount / 100, blockCount = blockSize;
 	Color** img; // output img
 	Color sum, sample; // Acumulator and sample variables, used for each different pixel and pixel sample, respectively
