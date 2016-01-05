@@ -91,14 +91,6 @@ int rayIntersectsTriangle(float *p, float *d,
 ///------------------------- END OF OTHER PEOPLE'S STUFF-----------------------------------------///
 
 
-bool shadowRay(Raio ray, Cena scene){
-	bool retorno = false;
-	Intersection intersection = closestObject(ray, scene);
-	Objeto closest = intersection.objeto;
-
-	if (verificar se colidiu com objeto) retorno = true;
-	return retorno;
-}
 
 bool retorno = false;
 double dist = INT_MAX;
@@ -181,6 +173,16 @@ Intersection closestObject(Raio ray, Cena scene){
 	
 }
 
+bool shadowRay(Raio ray, Cena scene){
+	bool retorno = false;
+	Intersection intersection = closestObject(ray, scene);
+	Objeto closest = intersection.objeto;
+
+	if (intersection.hit) retorno = true;
+	return retorno;
+}
+
+
 Color trace_path(int depth, Raio ray, Cena scene, Luz luz){
 	if (depth >= 5) return Color(0,0,0);
 
@@ -220,13 +222,13 @@ Color trace_path(int depth, Raio ray, Cena scene, Luz luz){
 	especular.b = luz.cor.b*aux;
 
 	//Shadow Ray
-	Raio ray;
-	ray.direcao = toLight;
-	ray.posicao.x = inters.x;
-	ray.posicao.y = inters.y;
-	ray.posicao.z = inters.z;
+	Raio ray2;
+	ray2.direcao = toLight;
+	ray2.posicao.x = inters.x;
+	ray2.posicao.y = inters.y;
+	ray2.posicao.z = inters.z;
 
-	bool sombra = shadowRay(ray,scene);
+	bool sombra = shadowRay(ray2,scene);
 
 	//Definindo o valor da cor local
 	Color corLocal;
@@ -408,6 +410,9 @@ int main(int argc, char **argv)
 {
 	//Lendo arquivo sdl que descreve a cena utilizada e calculando a normal após
 	lerCena("cornel_box\\cornellroom.sdl",olho,cena,janela,luz,objetos);
+	luz.ponto.x = 0;
+	luz.ponto.y = 3.8360;
+	luz.ponto.z = 25.0f;
 
 	window_height = janela.sizeX;
 	window_width = janela.sizeY;
