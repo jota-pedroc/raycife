@@ -91,6 +91,18 @@ int rayIntersectsTriangle(float *p, float *d,
 ///------------------------- END OF OTHER PEOPLE'S STUFF-----------------------------------------///
 
 
+bool shadowRay(Raio ray, Cena scene){
+	bool retorno = false;
+	Intersection intersection = closestObject(ray, scene);
+	Objeto closest = intersection.objeto;
+
+	if (verificar se colidiu com objeto) retorno = true;
+	return retorno;
+}
+
+bool retorno = false;
+double dist = INT_MAX;
+double distTemp = -1;
 
 Color difuso(float ip, float kd, Vetor lightDir, Vetor normal, Color corObjeto){
 
@@ -196,8 +208,6 @@ Color trace_path(int depth, Raio ray, Cena scene, Luz luz){
 	Color difusa = difuso(luz.Ip, closest.kd, toLight, normal, closest.cor);
 
 	//Respecular = Ip*ks*(R.V)^n
-
-	
 	Vetor rVetor =subVetor(kprod(2 * escalar(normal, toLight), normal), toLight);
 	rVetor = normalizar(rVetor);
 	Vetor vVetor = kprod(-1, ray.direcao);
@@ -209,8 +219,25 @@ Color trace_path(int depth, Raio ray, Cena scene, Luz luz){
 	especular.g = luz.cor.g*aux;
 	especular.b = luz.cor.b*aux;
 
-	Color corLocal = csum(csum(difusa, Color(ambiente)), especular);
+	//Shadow Ray
+	Raio ray;
+	ray.direcao = toLight;
+	ray.posicao.x = inters.x;
+	ray.posicao.y = inters.y;
+	ray.posicao.z = inters.z;
 
+	bool sombra = shadowRay(ray,scene);
+
+	//Definindo o valor da cor local
+	Color corLocal;
+	if (sombra){
+		corLocal.r = 0;
+		corLocal.g = 0;
+		corLocal.b = 0;
+	}else{
+		corLocal = csum(csum(difusa, Color(ambiente)), especular);
+	}
+	
 
 	// -------------------------recursion for contribution from other objects---------------------------------
 	float ktot = kd + ks + kt;
