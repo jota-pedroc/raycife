@@ -6,6 +6,8 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <ctime>
+
 
 Buffer buf;
 //Recebe 800x600 como defalt mas é alterada dependendo do arquivo de entrada
@@ -339,6 +341,8 @@ Color** render(Janela jan, Cena scene, Olho o, Luz luz){
 
 	//-----------------------------------------------MAIN LOOP----------------------------------------------
 	// For each pixel, take nSample of colors and average them. The average is the color of that pixel.
+	time_t startTime;
+	time(&startTime);
 	for (int i = 0; i < xsize; i++)
 	{
 		img[i] = (Color*) malloc(sizeof(Color)*ysize); // Array instanciation
@@ -355,7 +359,9 @@ Color** render(Janela jan, Cena scene, Olho o, Luz luz){
 				sum = csum(sum, sample);
 				count++;
 				if (count > blockCount){
-					printf("Processing... %d%% (%d/%d)\n", (int)((count / maxCount) * 100), (int)count, (int) maxCount);
+					time_t elapsed = time(nullptr) - startTime;
+					//time_t remaining = (elapsed *(1 - (count / maxCount))) / (count / maxCount);
+					printf("Processing... %d%% (%d/%d). Elapsed time: %ds.\n", (int)((count / maxCount) * 100), (int)count, (int) maxCount, elapsed);
 					blockCount += blockSize;
 				}
 				
