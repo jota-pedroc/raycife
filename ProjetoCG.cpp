@@ -300,7 +300,8 @@ Color** render(Janela jan, Cena scene, Olho o, Luz luz){
 
 	int xsize = jan.sizeX; // width in pixels
 	int ysize = jan.sizeY; // height in pixels
-	int nSamples = 5; // number of color samples per pixel
+	int nSamples = scene.npaths; // number of color samples per pixel
+	float count = 0, maxCount = xsize*ysize*nSamples, blockSize = maxCount / 100, blockCount = blockSize;
 	Color** img; // output img
 	Color sum, sample; // Acumulator and sample variables, used for each different pixel and pixel sample, respectively
 	Raio ray; // Camera to window variable, used for each different pixel
@@ -320,9 +321,15 @@ Color** render(Janela jan, Cena scene, Olho o, Luz luz){
 			ray = cameraRay(i, j, jan, o);
 			for (int k = 0; k < nSamples; k++)
 			{
-				printf("processing pixel (%d,%d), sample #%d\n", i, j, k);
+				
 				sample = trace_path(0, ray, scene, luz);
-				sum = csum(sum, sample);				
+				sum = csum(sum, sample);
+				count++;
+				if (count > blockCount){
+					printf("Processing... %d%% (%d/%d)\n", (int)((count / maxCount) * 100), (int)count, (int) maxCount);
+					blockCount += blockSize;
+				}
+				
 			}
 			img[i][j] = Color(sum.r/nSamples, sum.g/nSamples, sum.b/nSamples);
 		}
