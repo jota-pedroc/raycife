@@ -283,7 +283,9 @@ Color trace_path(int depth, Raio ray, Cena scene, Luz luz){
 	// Use the direction and position vector to make a ray
 	Raio novoRaio;
 	novoRaio.direcao = direcao;
-	novoRaio.posicao = posicao;
+	novoRaio.posicao.x = inters.x;
+	novoRaio.posicao.y = inters.y;
+	novoRaio.posicao.z = inters.z;
 
 	Color recursion = trace_path(depth + 1, novoRaio, scene, luz);
 
@@ -425,7 +427,7 @@ int main(int argc, char **argv)
 	lerCena("cornel_box\\cornellroom.sdl",olho,cena,janela,luz,objetos);
 	luz.ponto.x = 0;
 	luz.ponto.y = 3.8360;
-	luz.ponto.z = 25.0f;
+	luz.ponto.z = -25.0f;
 
 	window_height = janela.sizeX;
 	window_width = janela.sizeY;
