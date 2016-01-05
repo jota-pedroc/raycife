@@ -329,7 +329,7 @@ Color** render(Janela jan, Cena scene, Olho o, Luz luz){
 
 	int xsize = jan.sizeX; // width in pixels
 	int ysize = jan.sizeY; // height in pixels
-	int nSamples = 5; // number of color samples per pixel
+	int nSamples =1; // number of color samples per pixel
 	Color** img; // output img
 	Color sum, sample; // Acumulator and sample variables, used for each different pixel and pixel sample, respectively
 	Raio ray; // Camera to window variable, used for each different pixel
@@ -349,12 +349,21 @@ Color** render(Janela jan, Cena scene, Olho o, Luz luz){
 			ray = cameraRay(i, j, jan, o);
 			for (int k = 0; k < nSamples; k++)
 			{
-				printf("processing pixel (%d,%d), sample #%d\n", i, j, k);
+				//printf("processing pixel (%d,%d), sample #%d\n", i, j, k);
 				sample = trace_path(0, ray, scene, luz);
 				sum = csum(sum, sample);				
 			}
+			
+
+			Color out = Color(sum.r / nSamples, sum.g / nSamples, sum.b / nSamples);
+			
+			//Applying Tone Mapping 
+			//Color newOut = Color(out.r / (out.r + cena.tonemapping), out.g / (out.g + cena.tonemapping), out.b / (out.b + cena.tonemapping));
+			//img[i][j] = newOut;
+
 			img[i][j] = Color(sum.r/nSamples, sum.g/nSamples, sum.b/nSamples);
 		}
+		printf("processing line (%d)\n", i);
 	}
 
 	return img;
@@ -410,12 +419,13 @@ int main(int argc, char **argv)
 {
 	//Lendo arquivo sdl que descreve a cena utilizada e calculando a normal após
 	lerCena("cornel_box\\cornellroom.sdl",olho,cena,janela,luz,objetos);
+
 	luz.ponto.x = 0;
 	luz.ponto.y = 3.8360;
 	luz.ponto.z = 25.0f;
+	window_height = janela.sizeY;
+	window_width = janela.sizeX;
 
-	window_height = janela.sizeX;
-	window_width = janela.sizeY;
 
 	//Carregando os objetos no vector de objetos
 	for (int i = 0; i < objetos.size(); i++)
