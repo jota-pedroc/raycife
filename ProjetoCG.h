@@ -198,9 +198,9 @@ public:
 	void normalVertice(){
 		for (int i = 0; i < faces.size(); i++)
 		{
-			faces.at(i).n1 = calcularNormal(vertices.at(faces.at(i).v1-1).ponto, vertices.at(faces.at(i).v2-1).ponto, vertices.at(faces.at(i).v3-1).ponto);
+			faces.at(i).n1 = calcularNormal(vertices.at(faces.at(i).v1 - 1).ponto, vertices.at(faces.at(i).v3 - 1).ponto, vertices.at(faces.at(i).v2 - 1).ponto);
 			faces.at(i).n2 = calcularNormal(vertices.at(faces.at(i).v2-1).ponto, vertices.at(faces.at(i).v1-1).ponto, vertices.at(faces.at(i).v3-1).ponto);
-			faces.at(i).n3 = calcularNormal(vertices.at(faces.at(i).v3-1).ponto, vertices.at(faces.at(i).v1-1).ponto, vertices.at(faces.at(i).v2-1).ponto);
+			faces.at(i).n3 = calcularNormal(vertices.at(faces.at(i).v3 - 1).ponto, vertices.at(faces.at(i).v2 - 1).ponto, vertices.at(faces.at(i).v1 - 1).ponto);
 		}
 	}
 
