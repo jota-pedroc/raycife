@@ -176,12 +176,10 @@ Intersection closestObject(Raio ray, Cena scene){
 		out.hit = false;
 		return out;
 	}
-
-	
 }
 
 
-Intersection intersectTexture(Texture texture, Raio ray, Cena scene){
+Intersection intersectTexture(Objeto  texture, Raio ray, Cena scene){
 
 	Intersection out;
 	Objeto current;
@@ -189,7 +187,7 @@ Intersection intersectTexture(Texture texture, Raio ray, Cena scene){
 	Face face;
 	float closestz = INT_MIN;
 
-		current = texture.objeto;
+		current = texture;
 		currentFaces = current.faces;
 		for (int j = 0; j < currentFaces.size(); j++)
 		{
@@ -283,24 +281,24 @@ Color trace_path(int depth, Raio ray, Cena scene, Luz luz){
 	especular.g = luz.cor.g*aux;
 	especular.b = luz.cor.b*aux;
 
-	//Shadow Ray
-	Raio ray2;
-	ray2.direcao = toLight;
-	ray2.posicao.x = inters.x;
-	ray2.posicao.y = inters.y;
-	ray2.posicao.z = inters.z;
+	////Shadow Ray
+	//Raio ray2;
+	//ray2.direcao = toLight;
+	//ray2.posicao.x = inters.x;
+	//ray2.posicao.y = inters.y;
+	//ray2.posicao.z = inters.z;
 
-	bool sombra = shadowRay(ray2,scene);
+	//bool sombra = shadowRay(ray2,scene);
 
-	//Definindo o valor da cor local
+	////Definindo o valor da cor local
 	Color corLocal;
-	if (sombra){
-		corLocal.r = 0;
-		corLocal.g = 0;
-		corLocal.b = 0;
-	}else{
+	//if (sombra){
+	//	corLocal.r = 0;
+	//	corLocal.g = 0;
+	//	corLocal.b = 0;
+	//}else{
 		corLocal = csum(csum(difusa, Color(ambiente)), especular);
-	}
+	//}
 	
 
 	// -------------------------recursion for contribution from other objects---------------------------------
@@ -393,7 +391,7 @@ Color** render(Janela jan, Cena scene, Olho o, Luz luz){
 
 	int xsize = jan.sizeX; // width in pixels
 	int ysize = jan.sizeY; // height in pixels
-	int nSamples = 2; // number of color samples per pixel
+	int nSamples = 1; // number of color samples per pixel
 	float count = 0, maxCount = xsize*ysize*nSamples, blockSize = maxCount / 100, blockCount = blockSize;
 	Color** img; // output img
 	Color sum, sample; // Acumulator and sample variables, used for each different pixel and pixel sample, respectively
@@ -443,6 +441,46 @@ Color** render(Janela jan, Cena scene, Olho o, Luz luz){
 	return img;
 }
 
+Color** createTexture(Janela jan, Cena scene, Luz luz, Objeto objeto){
+	int xsize = jan.sizeX; // width in pixels
+	int ysize = jan.sizeY; // height in pixels
+	int nSamples = 2; // number of color samples per pixel
+	float count = 0, maxCount = xsize*ysize*nSamples, blockSize = maxCount / 100, blockCount = blockSize;
+	Color** img; // output img
+	Raio ray; // Camera to window variable, used for each different pixel
+
+	img = (Color**)malloc(sizeof(Color*)*xsize); // Array instanciation	
+	
+	Olho o;
+	o.x = luz.ponto.x;
+	o.y = luz.ponto.y;
+	o.z = luz.ponto.z;
+
+	//-----------------------------------------------MAIN LOOP----------------------------------------------
+
+	for (int i = 0; i < xsize; i++)
+	{
+		img[i] = (Color*)malloc(sizeof(Color)*ysize); // Array instanciation
+		for (int j = 0; j < ysize; j++)
+		{
+			ray = cameraRay(i, j, jan, o);
+
+			//Calcular o raio que reflete ate a luz do ponto que colidiu
+			Intersection intersection = intersectTexture(objeto,ray, scene);
+
+			if (intersection.hit){
+				img[i][j] = Color(0, 0, 0);
+			}
+			else{
+				img[i][j] = Color(255, 255, 255);
+			}
+		}
+	}
+
+	return img;
+}
+
+
 
 Color** renderTexture(Janela jan, Cena scene, Olho o, Luz luz, Buffer buffer){
 
@@ -474,11 +512,29 @@ Color** renderTexture(Janela jan, Cena scene, Olho o, Luz luz, Buffer buffer){
 			rayToLight.posicao.y = inters.y;
 			rayToLight.posicao.z = inters.z;
 
-			Intersection intersectionTexture = intersectTexture(texture, rayToLight, scene);
+			Intersection intersectionTexture = intersectTexture(texture.objeto, rayToLight, scene);
 			Objeto closestTexture = intersectionTexture.objeto;
 
 			if (intersectionTexture.hit){
-				img[i][j] = Color(0,0,0);
+
+				Ponto pInt = intersectionTexture.p;
+				Ponto p1=texture.objeto.vertices.at(2).ponto;
+				Ponto p2 = texture.objeto.vertices.at(1).ponto;
+				Ponto p3=texture.objeto.vertices.at(3).ponto;
+
+				float x= distReta(pInt, p1,p2);
+				float y=distReta(pInt, p1, p3);
+
+				float checkx = defVetor(p1,p2).norma();
+				float checkz = defVetor(p1, p3).norma();
+
+				int valorX =floor( (jan.sizeX*x) / defVetor(p1, p2).norma());
+				int valorY = floor((jan.sizeY*y) / defVetor(p1, p3).norma());
+
+				Color c = texture.buffer[valorX][valorY];
+				cout << valorX << " " << valorY << endl;
+				
+				img[i][j] = Color(c.r,c.g,c.b);
 			}		
 		}
 	}
@@ -541,7 +597,7 @@ int main(int argc, char **argv)
 
 	luz.ponto.x = 0;
 	luz.ponto.y = 3.8360;
-	luz.ponto.z = 25.0f;
+	luz.ponto.z = -25.0f;
 	window_height = janela.sizeY;
 	window_width = janela.sizeX;
 
@@ -557,26 +613,34 @@ int main(int argc, char **argv)
 
 	//Chamando o algoritmos de renderização que inclui o Path Tracing
 	buf.buffer = render(janela,cena,olho,luz);
+	/*Janela janelaLuz;
+	janelaLuz.sizeX = janela.sizeX;
+	janelaLuz.sizeY = janela.sizeY;
+	janelaLuz.x0 = ;
+	janelaLuz.y0 = ;
+	janelaLuz.x1 = ;
+	janelaLuz.y1 = ;
 
+	buf.buffer = createTexture(janelaLuz, cena, luz,objetos.at(6));*/
 
 	vector<Vertice> vTexture;
 	vector<Face> fTexture;
 
 	Vertice v1;
 	v1.ponto.x = -2;
-	v1.ponto.y = 2;
+	v1.ponto.y = 0;
 	v1.ponto.z = -20;
 	Vertice v2;
 	v2.ponto.x = -2;
-	v2.ponto.y = 2;
-	v2.ponto.z = -29;
+	v2.ponto.y = 0;
+	v2.ponto.z = -30;
 	Vertice v3;
 	v3.ponto.x = 2;
-	v3.ponto.y = 2;
-	v3.ponto.z = -29;
+	v3.ponto.y = 0;
+	v3.ponto.z = -30;
 	Vertice v4;
 	v4.ponto.x = 2;
-	v4.ponto.y = 2;
+	v4.ponto.y = 0;
 	v4.ponto.z = -20;
 
 	vTexture.push_back(v1);
@@ -598,22 +662,32 @@ int main(int argc, char **argv)
 	Objeto objetoTextura;
 	objetoTextura.faces = fTexture;
 	objetoTextura.vertices = vTexture;
+	texture.objeto = objetoTextura;
 
-	renderTexture(janela,cena,olho,luz,buf);
+	
 
+	Color** buffer2 = (Color**)malloc(sizeof(Color*)*janela.sizeX);
+	texture.buffer=buffer2;
+	//Carregando textura 
+	for (int i = 0; i < janela.sizeX; i++)
+	{
+		buffer2[i] = (Color*)malloc(sizeof(Color)*janela.sizeY);
+		for (int j = 0; j < janela.sizeY; j++)
+		{
+			if (j>50 && j < 200){
+				texture.buffer[i][j].r = 0;
+				texture.buffer[i][j].g = 0;
+				texture.buffer[i][j].b = 0;
+			}
+			else{
+				texture.buffer[i][j].r = 1;
+				texture.buffer[i][j].g = 1;
+				texture.buffer[i][j].b = 1;
+			}
+		}
+	}
 
-	////Carregando textura 
-	//for (int i = 0; i < 50; i++)
-	//{
-	//	for (int j = 0; j < 50; j++)
-	//	{
-	//		texture[i][j].r = 0;
-	//		texture[i][j].g = 0;
-	//		texture[i][j].b = 0;
-	//	}
-	//}
-
-
+	renderTexture(janela, cena, olho, luz, buf);
 
 	///////////////////////////////////////////OPENGL//////////////////////////////////////////////
 	//Initiating glut variables
