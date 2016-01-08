@@ -130,7 +130,7 @@ Intersection closestObject(Raio ray, Cena scene){
 	Objeto current;
 	vector<Face> currentFaces;
 	Face face;
-	float closestz = INT_MIN;
+	float closestDist = INT_MAX;
 
 	for (int i = 0; i < objetos.size(); i++)
 	{
@@ -149,21 +149,18 @@ Intersection closestObject(Raio ray, Cena scene){
 			float p[3] = { ray.posicao.x, ray.posicao.y, ray.posicao.z };
 			float d[3] = { ray.direcao.x, ray.direcao.y, ray.direcao.z };
 			float t = rayIntersectsTriangle(p,d,v0,v1,v2);
-			if (t > 0){
-				float z = ray.direcao.z*t + ray.posicao.z;
-				if (z > closestz){
-					closestz = z;
+			if (t > 0 && t < closestDist){
+					closestDist = t;
 					out.objeto = current;
 					out.p.x = ray.direcao.x*t + ray.posicao.x;
 					out.p.y = ray.direcao.y*t + ray.posicao.y;
-					out.p.z = closestz;
+					out.p.z = ray.direcao.z*t + ray.posicao.z;
 					out.normal = current.normalPonto(out.p, f);
-				}
 			}
 		}
 	}
 
-	if (closestz != INT_MIN){
+	if (closestDist != INT_MAX){
 		out.hit = true;
 		return out;
 	}
@@ -299,9 +296,6 @@ Color trace_path(int depth, Raio ray, Cena scene, Luz luz){
 	// -----------------------------------output--------------------------------------
 	//*****Testar diferentes pesos*****
 	output = csum(recursion, corLocal);
-	output.r /= 2;
-	output.g /= 2;
-	output.b /= 2;
 	return output;
 }
 
