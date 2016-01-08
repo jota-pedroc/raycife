@@ -234,6 +234,7 @@ Color trace_path(int depth, Raio ray, Cena scene, Luz luz){
 	ray2.posicao.x = inters.x;
 	ray2.posicao.y = inters.y;
 	ray2.posicao.z = inters.z;
+	ray2.direcao = normalizar(ray2.direcao);
 
 	bool sombra = shadowRay(ray2,scene);
 
@@ -291,6 +292,7 @@ Color trace_path(int depth, Raio ray, Cena scene, Luz luz){
 	novoRaio.posicao.x = inters.x;
 	novoRaio.posicao.y = inters.y;
 	novoRaio.posicao.z = inters.z;
+	novoRaio.direcao = normalizar(novoRaio.direcao);
 
 	Color recursion = trace_path(depth + 1, novoRaio, scene, luz);
 
@@ -328,6 +330,7 @@ Raio cameraRay(int x, int y, Janela jan, Olho o){
 	
 	output.posicao = posicao;
 	output.direcao = direcao;
+	output.direcao = normalizar(output.direcao);
 	return output;
 }
 
@@ -338,7 +341,7 @@ Color** render(Janela jan, Cena scene, Olho o, Luz luz){
 
 	int xsize = jan.sizeX; // width in pixels
 	int ysize = jan.sizeY; // height in pixels
-	int nSamples = 20; // number of color samples per pixel
+	int nSamples = scene.npaths; // number of color samples per pixel
 	float count = 0, maxCount = xsize*ysize*nSamples, blockSize = maxCount / 100, blockCount = blockSize;
 	Color** img; // output img
 	Color sum, sample; // Acumulator and sample variables, used for each different pixel and pixel sample, respectively
@@ -378,10 +381,10 @@ Color** render(Janela jan, Cena scene, Olho o, Luz luz){
 			Color out = Color(sum.r / nSamples, sum.g / nSamples, sum.b / nSamples);
 			
 			//Applying Tone Mapping 
-			//Color newOut = Color(out.r / (out.r + cena.tonemapping), out.g / (out.g + cena.tonemapping), out.b / (out.b + cena.tonemapping));
-			//img[i][j] = newOut;
+			Color newOut = Color(out.r / (out.r + cena.tonemapping), out.g / (out.g + cena.tonemapping), out.b / (out.b + cena.tonemapping));
+			img[i][j] = newOut;
 
-			img[i][j] = Color(sum.r/nSamples, sum.g/nSamples, sum.b/nSamples);
+			//img[i][j] = Color(sum.r/nSamples, sum.g/nSamples, sum.b/nSamples);
 		}
 	}
 
