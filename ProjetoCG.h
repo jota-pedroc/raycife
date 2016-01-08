@@ -13,7 +13,17 @@ using namespace std;
 class Vetor{
 public:
 	float x, y, z;
+
+	float norma(){
+
+		float a = x*x;
+		float b = y*y;
+		float c = z*z;
+
+		return sqrt(a+b+c);	
+	}
 };
+
 
 class Ponto{
 public:
@@ -87,6 +97,8 @@ public:
 	Vetor direcao;
 	int tamanho;//TODO: necessario?
 };
+
+
 
 Vetor Color::toVetor(){
 	Vetor out;
@@ -168,6 +180,7 @@ Vetor normalizar(Vetor vetor){
 
 	return vetorNormalizado;
 }
+
 
 //Calcular normal vertice de um triangulo (feito em relaçao a p1) *nao normalizado*
 Vetor calcularNormal(Ponto p1, Ponto p2, Ponto p3){
@@ -265,29 +278,26 @@ public:
 
 };
 
+class Texture{
+public:
+	Objeto objeto;
+	Color** buffer;
+};
+
 class Buffer{
 public:
 
 	Color** buffer;
 };
 
-Ponto pixelParaPonto2d(int i, int j, Janela janela) {
-	//baseado no projeto Raycife de Ermano Arruda (eaa3)
-	Ponto retorno;
-	float larguraPixel;
-	if (janela.x1 > janela.x0) larguraPixel = (janela.x1 - janela.x0) / janela.sizeX;
-	else larguraPixel = (janela.x0 - janela.x1) / janela.sizeX;
 
-	float alturaPixel;
-	if (janela.y1 > janela.y0) alturaPixel = (janela.y1 - janela.y0) / janela.sizeY;
-	else alturaPixel = (janela.y0 - janela.y1) / janela.sizeY;
+float distReta(Ponto p, Ponto p1, Ponto p2){
 
-	retorno.x = (janela.x0 + larguraPixel / 2) + (j * larguraPixel);
-	retorno.y = (janela.y1 - alturaPixel / 2) - (i * alturaPixel);
-	retorno.z = 0;
-
-	return retorno;
-}
+	Vetor AB = defVetor(p1,p2);
+	Vetor PA=defVetor(p,p1);
+	
+	return (vetorial(PA, AB).norma())/AB.norma();
+};
 
 
 bool lerCena(const char* path, Olho &olho, Cena &cena, Janela &janela, Luz &luz, vector<Objeto> &listaObjetos){
