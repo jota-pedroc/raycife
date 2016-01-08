@@ -29,6 +29,8 @@ Luz luz;
 //Loading objects of the scene
 vector<Objeto> objetos;
 
+vector<Quadrica> quadricas;
+
 ///-------------------------OTHER PEOPLE'S STUFF-----------------------------------------///
 //http://www.lighthouse3d.com/tutorials/maths/ray-triangle-intersection/
 //http://www.cs.virginia.edu/~gfx/Courses/2003/ImageSynthesis/papers/Acceleration/Fast%20MinimumStorage%20RayTriangle%20Intersection.pdf
@@ -124,6 +126,14 @@ private:
 	Face f;
 };
 
+Vetor normalEsfera(Ponto p, Quadrica q){
+	Ponto centro;
+	centro.x = -q.g;
+	centro.y = -q.h;
+	centro.z = -q.j;
+	return defVetor(centro, p);
+}
+
 Intersection closestObject(Raio ray, Cena scene){
 	// TODO
 	Intersection out;
@@ -163,14 +173,39 @@ Intersection closestObject(Raio ray, Cena scene){
 		}
 	}
 
+	Quadrica currentQuad;
+	for (int i = 0; i < quadricas.size(); i++)
+	{
+		currentQuad = quadricas.at(i);
+		
+		float t = intersect(ray.toRay(), &(currentQuad.toQuad()));
+		if (t > 0){
+			if (ray.posicao.x == 0){
+				int blah = 2 + 2;
+			}
+			float z = ray.direcao.z*t + ray.posicao.z;
+			if (z > closestz){
+				closestz = z;
+				out.objeto = currentQuad;
+				out.p.x = ray.direcao.x*t + ray.posicao.x;
+				out.p.y = ray.direcao.y*t + ray.posicao.y;
+				out.p.z = closestz;
+				out.normal = normalEsfera(out.p, currentQuad);
+			}
+		}
+		
+	}
+
+
+
 	if (closestz != INT_MIN){
 		out.hit = true;
-		return out;
 	}
 	else {
 		out.hit = false;
-		return out;
 	}
+
+	return out;
 
 	
 }
@@ -195,6 +230,10 @@ Color trace_path(int depth, Raio ray, Cena scene, Luz luz){
 	// --------------------------check intersections--------------------------
 	// ray intersects triangle for each triangle. Get the one closest to the eye that returns true.
 	Intersection intersection = closestObject(ray, scene);
+	if (intersection.objeto.cor.g == 0.9 && depth == 0 && intersection.hit){
+		int bleh = 2 + 2;
+	}
+
 	if (intersection.hit == false){
 		return scene.background;
 	}
@@ -236,8 +275,8 @@ Color trace_path(int depth, Raio ray, Cena scene, Luz luz){
 	ray2.posicao.z = inters.z;
 	ray2.direcao = normalizar(ray2.direcao);
 
-	bool sombra = shadowRay(ray2,scene);
-
+	//bool sombra = shadowRay(ray2,scene);
+	bool sombra = false;
 	//Definindo o valor da cor local
 	Color corLocal;
 	if (sombra){
@@ -299,9 +338,6 @@ Color trace_path(int depth, Raio ray, Cena scene, Luz luz){
 	// -----------------------------------output--------------------------------------
 	//*****Testar diferentes pesos*****
 	output = csum(recursion, corLocal);
-	output.r /= 2;
-	output.g /= 2;
-	output.b /= 2;
 	return output;
 }
 
@@ -440,7 +476,7 @@ void renderScene()
 int main(int argc, char **argv)
 {
 	//Lendo arquivo sdl que descreve a cena utilizada e calculando a normal após
-	lerCena("cornel_box\\cornellroom.sdl",olho,cena,janela,luz,objetos);
+	lerCena("cornel_box\\cornellroom.sdl",olho,cena,janela,luz,objetos, quadricas);
 
 	luz.ponto.x = 0;
 	luz.ponto.y = 3.8360;
