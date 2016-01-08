@@ -88,6 +88,8 @@ public:
 	int tamanho;//TODO: necessario?
 };
 
+
+
 Vetor Color::toVetor(){
 	Vetor out;
 	out.x = this->r;
@@ -263,6 +265,11 @@ public:
 		return normal;
 	}
 
+};
+
+class Texture{
+public:
+	Objeto objeto;
 };
 
 class Buffer{

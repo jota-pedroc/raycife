@@ -26,8 +26,13 @@ Cena cena;
 //Loading illumination paramenters
 Luz luz;
 
+Texture texture;
+
 //Loading objects of the scene
 vector<Objeto> objetos;
+
+
+//Color texture[50][50];
 
 ///-------------------------OTHER PEOPLE'S STUFF-----------------------------------------///
 //http://www.lighthouse3d.com/tutorials/maths/ray-triangle-intersection/
@@ -174,6 +179,56 @@ Intersection closestObject(Raio ray, Cena scene){
 
 	
 }
+
+
+Intersection intersectTexture(Texture texture, Raio ray, Cena scene){
+
+	Intersection out;
+	Objeto current;
+	vector<Face> currentFaces;
+	Face face;
+	float closestz = INT_MIN;
+
+		current = texture.objeto;
+		currentFaces = current.faces;
+		for (int j = 0; j < currentFaces.size(); j++)
+		{
+			Face f = currentFaces.at(j);
+			Vertice x = current.vertices.at(f.v1 - 1);
+			float v0[3] = { x.ponto.x, x.ponto.y, x.ponto.z };
+			Vertice y = current.vertices.at(f.v2 - 1);
+			float v1[3] = { y.ponto.x, y.ponto.y, y.ponto.z };
+			Vertice z = current.vertices.at(f.v3 - 1);
+			float v2[3] = { z.ponto.x, z.ponto.y, z.ponto.z };
+
+			float p[3] = { ray.posicao.x, ray.posicao.y, ray.posicao.z };
+			float d[3] = { ray.direcao.x, ray.direcao.y, ray.direcao.z };
+			float t = rayIntersectsTriangle(p, d, v0, v1, v2);
+			if (t > 0){
+				float z = ray.direcao.z*t + ray.posicao.z;
+				if (z > closestz){
+					closestz = z;
+					out.objeto = current;
+					out.p.x = ray.direcao.x*t + ray.posicao.x;
+					out.p.y = ray.direcao.y*t + ray.posicao.y;
+					out.p.z = closestz;
+					out.normal = current.normalPonto(out.p, f);
+				}
+			}
+		}
+	
+
+	if (closestz != INT_MIN){
+		out.hit = true;
+		return out;
+	}
+	else {
+		out.hit = false;
+		return out;
+	}
+}
+
+
 
 bool shadowRay(Raio ray, Cena scene){
 	bool retorno = false;
@@ -338,7 +393,7 @@ Color** render(Janela jan, Cena scene, Olho o, Luz luz){
 
 	int xsize = jan.sizeX; // width in pixels
 	int ysize = jan.sizeY; // height in pixels
-	int nSamples = 20; // number of color samples per pixel
+	int nSamples = 2; // number of color samples per pixel
 	float count = 0, maxCount = xsize*ysize*nSamples, blockSize = maxCount / 100, blockCount = blockSize;
 	Color** img; // output img
 	Color sum, sample; // Acumulator and sample variables, used for each different pixel and pixel sample, respectively
@@ -388,6 +443,49 @@ Color** render(Janela jan, Cena scene, Olho o, Luz luz){
 	return img;
 }
 
+
+Color** renderTexture(Janela jan, Cena scene, Olho o, Luz luz, Buffer buffer){
+
+	int xsize = jan.sizeX; // width in pixels
+	int ysize = jan.sizeY; // height in pixels
+	int nSamples = 20; // number of color samples per pixel
+	float count = 0, maxCount = xsize*ysize*nSamples, blockSize = maxCount / 100, blockCount = blockSize;
+	Color** img=buffer.buffer; // output img
+	Raio ray; // Camera to window variable, used for each different pixel
+
+	//-----------------------------------------------MAIN LOOP----------------------------------------------
+	
+	for (int i = 0; i < xsize; i++)
+	{
+		for (int j = 0; j < ysize; j++)
+		{
+			ray = cameraRay(i, j, jan, o);
+
+			//Calcular o raio que reflete ate a luz do ponto que colidiu
+			Intersection intersection = closestObject(ray, scene);
+			Objeto closest = intersection.objeto;
+			Ponto inters = intersection.p;
+			Vetor toLight = defVetor(inters, luz.ponto);
+			toLight = normalizar(toLight);
+			//Gerando raio direcionado para a luz
+			Raio rayToLight;
+			rayToLight.direcao = toLight;
+			rayToLight.posicao.x = inters.x;
+			rayToLight.posicao.y = inters.y;
+			rayToLight.posicao.z = inters.z;
+
+			Intersection intersectionTexture = intersectTexture(texture, rayToLight, scene);
+			Objeto closestTexture = intersectionTexture.objeto;
+
+			if (intersectionTexture.hit){
+				img[i][j] = Color(0,0,0);
+			}		
+		}
+	}
+
+	return img;
+}
+
 void myinit()
 {
 	//srand(time(NULL));
@@ -410,6 +508,8 @@ void myinit()
 
 	// loop(0);
 }
+
+
 
 
 void renderScene()
@@ -457,6 +557,61 @@ int main(int argc, char **argv)
 
 	//Chamando o algoritmos de renderização que inclui o Path Tracing
 	buf.buffer = render(janela,cena,olho,luz);
+
+
+	vector<Vertice> vTexture;
+	vector<Face> fTexture;
+
+	Vertice v1;
+	v1.ponto.x = -2;
+	v1.ponto.y = 2;
+	v1.ponto.z = -20;
+	Vertice v2;
+	v2.ponto.x = -2;
+	v2.ponto.y = 2;
+	v2.ponto.z = -29;
+	Vertice v3;
+	v3.ponto.x = 2;
+	v3.ponto.y = 2;
+	v3.ponto.z = -29;
+	Vertice v4;
+	v4.ponto.x = 2;
+	v4.ponto.y = 2;
+	v4.ponto.z = -20;
+
+	vTexture.push_back(v1);
+	vTexture.push_back(v2);
+	vTexture.push_back(v3);
+	vTexture.push_back(v4);
+
+	Face f1;
+	f1.v1 = 1;
+	f1.v2 = 2;
+	f1.v3 = 3;
+	Face f2;
+	f2.v1 = 1;
+	f2.v2 = 3;
+	f2.v3 = 4;
+	fTexture.push_back(f1);
+	fTexture.push_back(f2);
+
+	Objeto objetoTextura;
+	objetoTextura.faces = fTexture;
+	objetoTextura.vertices = vTexture;
+
+	renderTexture(janela,cena,olho,luz,buf);
+
+
+	////Carregando textura 
+	//for (int i = 0; i < 50; i++)
+	//{
+	//	for (int j = 0; j < 50; j++)
+	//	{
+	//		texture[i][j].r = 0;
+	//		texture[i][j].g = 0;
+	//		texture[i][j].b = 0;
+	//	}
+	//}
 
 
 
