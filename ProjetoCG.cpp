@@ -275,8 +275,7 @@ Color trace_path(int depth, Raio ray, Cena scene, Luz luz){
 	ray2.posicao.z = inters.z;
 	ray2.direcao = normalizar(ray2.direcao);
 
-	//bool sombra = shadowRay(ray2,scene);
-	bool sombra = false;
+	bool sombra = shadowRay(ray2,scene);
 	//Definindo o valor da cor local
 	Color corLocal;
 	if (sombra){

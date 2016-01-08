@@ -52,9 +52,9 @@ double intersect(Ray ray, Quad *obj)
 	j = obj->j;
 	k = obj->k;
 
-	dx = ray.dir.x - ray.org.x;
-	dy = ray.dir.y - ray.org.y;
-	dz = ray.dir.z - ray.org.z;
+	dx = ray.dir.x;
+	dy = ray.dir.y;
+	dz = ray.dir.z;
 
 	x0 = ray.org.x;
 	y0 = ray.org.y;
