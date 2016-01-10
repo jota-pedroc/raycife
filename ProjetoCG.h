@@ -124,6 +124,15 @@ Color csum(Color c1, Color c2){
 }
 
 
+// Soma de vetores
+Vetor vsum(Vetor v1, Vetor v2){
+	Vetor out;
+	out.x = v1.x + v2.x;
+	out.y = v1.y + v2.y;
+	out.z = v1.z + v2.z;
+	return out;
+}
+
 //Funcoes matematicas importantes
 
 // Produto escalar x vetor

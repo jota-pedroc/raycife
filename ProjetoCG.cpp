@@ -100,6 +100,17 @@ bool retorno = false;
 double dist = INT_MAX;
 double distTemp = -1;
 
+
+Vetor calcularRefracao(float n1, float n2, Vetor i, Vetor n){
+	float cosI = escalar(i, n);
+
+	float sen2t = pow(n1 / n2, 2)*(1 - pow(cosI, 2));
+
+	Vetor t = vsum(kprod(n1 / n2, i),kprod(((n1 / n2)*cosI - sqrt(1 - sen2t)), n));
+	return t;
+}
+
+
 Color difuso(float ip, float kd, Vetor lightDir, Vetor normal, Color corObjeto){
 
 	Color retorno;
@@ -321,7 +332,20 @@ Color trace_path(int depth, Raio ray, Cena scene, Luz luz){
 		// TODO
 		// objeto opaco? nenhuma cor transmitida
 		// caso contrario... verificar refracao
-		depth = 5;
+		float cos = escalar(ray.direcao, normal);
+		float n1, n2;
+		if (cos > 0){
+			n1 = closest.kt;
+			n1 = 1.3321;
+			n2 = 1;
+			direcao = calcularRefracao(n1, n2, ray.direcao, normal);
+		}
+		else {
+			n1 = 1;
+			n2 = closest.kt;
+			n2 = 1.3321;
+			direcao = calcularRefracao(n1, n2, ray.direcao, kprod(-1, normal));
+		}
 	}
 
 	// Use the direction and position vector to make a ray
