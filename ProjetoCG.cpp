@@ -30,7 +30,7 @@ Texture texture;
 
 //Loading objects of the scene
 vector<Objeto> objetos;
-
+vector<Quadrica> quadricas;
 
 //Color texture[50][50];
 
@@ -103,6 +103,17 @@ bool retorno = false;
 double dist = INT_MAX;
 double distTemp = -1;
 
+
+Vetor calcularRefracao(float n1, float n2, Vetor i, Vetor n){
+	float cosI = escalar(i, n);
+
+	float sen2t = pow(n1 / n2, 2)*(1 - pow(cosI, 2));
+
+	Vetor t = vsum(kprod(n1 / n2, i),kprod(((n1 / n2)*cosI - sqrt(1 - sen2t)), n));
+	return t;
+}
+
+
 Color difuso(float ip, float kd, Vetor lightDir, Vetor normal, Color corObjeto){
 
 	Color retorno;
@@ -128,6 +139,14 @@ public:
 private:
 	Face f;
 };
+
+Vetor normalEsfera(Ponto p, Quadrica q){
+	Ponto centro;
+	centro.x = -q.g;
+	centro.y = -q.h;
+	centro.z = -q.j;
+	return defVetor(centro, p);
+}
 
 Intersection closestObject(Raio ray, Cena scene){
 	// TODO
@@ -165,19 +184,36 @@ Intersection closestObject(Raio ray, Cena scene){
 		}
 	}
 
+	Quadrica currentQuad;
+	for (int i = 0; i < quadricas.size(); i++)
+	{
+		currentQuad = quadricas.at(i);
+		
+		float t = intersect(ray.toRay(), &(currentQuad.toQuad()));
+		if (t > 0 && t < closestDist){
+			closestDist = t;
+			out.objeto = currentQuad;
+			out.p.x = ray.direcao.x*t + ray.posicao.x;
+			out.p.y = ray.direcao.y*t + ray.posicao.y;
+			out.p.z = ray.direcao.z*t + ray.posicao.z;;
+			out.normal = normalEsfera(out.p, currentQuad);
+		}
+		
+		
+	}
+
 	if (closestDist != INT_MAX){
 		out.hit = true;
-		return out;
 	}
 	else {
 		out.hit = false;
-		return out;
 	}
+
+	return out;
 }
 
 
 Intersection intersectTexture(Objeto  texture, Raio ray, Cena scene){
-
 	Intersection out;
 	Objeto current;
 	vector<Face> currentFaces;
@@ -208,9 +244,6 @@ Intersection intersectTexture(Objeto  texture, Raio ray, Cena scene){
 				out.normal = current.normalPonto(out.p, f);
 				}
 		}
-		
-	
-
 		if (closestDist != INT_MAX){
 			out.hit = true;
 			return out;
@@ -285,6 +318,7 @@ Color trace_path(int depth, Raio ray, Cena scene, Luz luz){
 	ray2.posicao.z = inters.z;
 	ray2.direcao = normalizar(ray2.direcao);
 
+
 	//bool sombra = shadowRay(ray2,scene);
 
 	////Definindo o valor da cor local
@@ -332,7 +366,20 @@ Color trace_path(int depth, Raio ray, Cena scene, Luz luz){
 		// TODO
 		// objeto opaco? nenhuma cor transmitida
 		// caso contrario... verificar refracao
-		depth = 5;
+		float cos = escalar(ray.direcao, normal);
+		float n1, n2;
+		if (cos > 0){
+			n1 = closest.kt;
+			n1 = 1.3321;
+			n2 = 1;
+			direcao = calcularRefracao(n1, n2, ray.direcao, normal);
+		}
+		else {
+			n1 = 1;
+			n2 = closest.kt;
+			n2 = 1.3321;
+			direcao = calcularRefracao(n1, n2, ray.direcao, kprod(-1, normal));
+		}
 	}
 
 	// Use the direction and position vector to make a ray
@@ -591,7 +638,7 @@ void renderScene()
 int main(int argc, char **argv)
 {
 	//Lendo arquivo sdl que descreve a cena utilizada e calculando a normal após
-	lerCena("cornel_box\\cornellroom.sdl",olho,cena,janela,luz,objetos);
+	lerCena("cornel_box\\cornellroom.sdl",olho,cena,janela,luz,objetos, quadricas);
 
 	luz.ponto.x = 0;
 	luz.ponto.y = 3.8360;

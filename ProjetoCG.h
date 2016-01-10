@@ -4,6 +4,7 @@
 #include <cmath>
 #include "../raycife/Lib/glew/glew.h"
 #include "../raycife/Lib/freeglut/freeglut.h"
+#include "quadric.h"
 
 # define PI           3.14159265358979323846
 
@@ -91,14 +92,28 @@ public:
 	float Ip;
 };
 
+
+
 class Raio{
 public:
 	Vetor posicao;
 	Vetor direcao;
 	int tamanho;//TODO: necessario?
+
+	Ray toRay();
 };
 
-
+Ray Raio::toRay(){
+	Ray out;
+	out.dir.x = this->direcao.x;
+	out.dir.y = this->direcao.y;
+	out.dir.z = this->direcao.z;
+	out.org.x = this->posicao.x;
+	out.org.y = this->posicao.y;
+	out.org.z = this->posicao.z;
+	out.depth = this->tamanho;
+	return out;
+}
 
 Vetor Color::toVetor(){
 	Vetor out;
@@ -118,6 +133,15 @@ Color csum(Color c1, Color c2){
 	return output;
 }
 
+
+// Soma de vetores
+Vetor vsum(Vetor v1, Vetor v2){
+	Vetor out;
+	out.x = v1.x + v2.x;
+	out.y = v1.y + v2.y;
+	out.z = v1.z + v2.z;
+	return out;
+}
 
 //Funcoes matematicas importantes
 
@@ -278,11 +302,34 @@ public:
 
 };
 
+
 class Texture{
 public:
 	Objeto objeto;
 	Color** buffer;
 };
+
+class Quadrica : public Objeto {
+public:
+	float a, b, c, d, e, f, g, h, j, k;
+
+	Quad toQuad();
+};
+
+Quad Quadrica::toQuad(){
+	Quad out;
+	out.a = this->a;
+	out.b = this->b;
+	out.c = this->c;
+	out.d = this->d;
+	out.e = this->e;
+	out.f = this->f;
+	out.g = this->g;
+	out.h = this->h;
+	out.j = this->j;
+	out.k = this->k;
+	return out;
+}
 
 class Buffer{
 public:
@@ -300,7 +347,7 @@ float distReta(Ponto p, Ponto p1, Ponto p2){
 };
 
 
-bool lerCena(const char* path, Olho &olho, Cena &cena, Janela &janela, Luz &luz, vector<Objeto> &listaObjetos){
+bool lerCena(const char* path, Olho &olho, Cena &cena, Janela &janela, Luz &luz, vector<Objeto> &listaObjetos, vector<Quadrica> &listaQuadricas){
 
 	//O método abaixo foi baseado no cógigo encontrado no tutorial de OpenGL:
 	//http://www.opengl-tutorial.org/beginners-tutorials/tutorial-7-model-loading/
@@ -357,6 +404,12 @@ bool lerCena(const char* path, Olho &olho, Cena &cena, Janela &janela, Luz &luz,
 			Objeto o;
 			fscanf(file, "%s %f %f %f %f %f %f %f %f %f\n", &o.path, &o.cor.r, &o.cor.g, &o.cor.b, &o.ka, &o.kd, &o.ks, &o.kt, &o.coeficienteEspecular);
 			listaObjetos.push_back(o);
+		}
+		else if (strcmp(lineHeader, "quadric") == 0){
+			Quadrica q;
+			fscanf(file, "%f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f\n", &q.a, &q.b, &q.c, &q.d, &q.e, &q.f, &q.g, &q.h, &q.j, &q.k, &q.cor.r, &q.cor.g, &q.cor.b,
+				&q.ka, &q.kd, &q.ks, &q.kt, &q.coeficienteEspecular);
+			listaQuadricas.push_back(q);
 		}
 		else{
 			// Probably a comment, eat up the rest of the line
