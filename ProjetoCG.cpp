@@ -8,6 +8,10 @@
 #include <string>
 #include <ctime>
 
+#include "Cena.h"
+#include "Objeto.h"
+#include "Raio.h"
+
 
 Buffer buf;
 //Recebe 800x600 como defalt mas é alterada dependendo do arquivo de entrada
@@ -117,10 +121,11 @@ Vetor calcularRefracao(float n1, float n2, Vetor i, Vetor n){
 Color difuso(float ip, float kd, Vetor lightDir, Vetor normal, Color corObjeto){
 
 	Color retorno;
-
-	retorno.r = ip*kd*escalar(lightDir, normal)*corObjeto.r; 
-	retorno.g = ip*kd*escalar(lightDir, normal)*corObjeto.g;
-	retorno.b = ip*kd*escalar(lightDir, normal)*corObjeto.b;
+	float prodEscalar = escalar(lightDir, normal);		
+	float aux = ip*kd*prodEscalar;
+	retorno.r = aux*corObjeto.r; 
+	retorno.g = aux*corObjeto.g;
+	retorno.b = aux*corObjeto.b;
 	
 	return retorno;
 };
@@ -163,12 +168,12 @@ Intersection closestObject(Raio ray, Cena scene){
 		for (int j = 0; j < currentFaces.size(); j++)
 		{
 			Face f = currentFaces.at(j);
-			Vertice x = current.vertices.at(f.v1-1);
-			float v0[3] = { x.ponto.x, x.ponto.y, x.ponto.z };
-			Vertice y = current.vertices.at(f.v2-1);
-			float v1[3] = { y.ponto.x, y.ponto.y, y.ponto.z };
-			Vertice z = current.vertices.at(f.v3-1);
-			float v2[3] = { z.ponto.x, z.ponto.y, z.ponto.z };
+			Vertice* x = f.v1;
+			float v0[3] = { x->x, x->y, x->z };
+			Vertice* y = f.v2;
+			float v1[3] = { y->x, y->y, y->z };
+			Vertice* z = f.v3;
+			float v2[3] = { z->x, z->y, z->z };
 
 			float p[3] = { ray.posicao.x, ray.posicao.y, ray.posicao.z };
 			float d[3] = { ray.direcao.x, ray.direcao.y, ray.direcao.z };
@@ -225,12 +230,12 @@ Intersection intersectTexture(Objeto  texture, Raio ray, Cena scene){
 		for (int j = 0; j < currentFaces.size(); j++)
 		{
 			Face f = currentFaces.at(j);
-			Vertice x = current.vertices.at(f.v1 - 1);
-			float v0[3] = { x.ponto.x, x.ponto.y, x.ponto.z };
-			Vertice y = current.vertices.at(f.v2 - 1);
-			float v1[3] = { y.ponto.x, y.ponto.y, y.ponto.z };
-			Vertice z = current.vertices.at(f.v3 - 1);
-			float v2[3] = { z.ponto.x, z.ponto.y, z.ponto.z };
+			Vertice* x = f.v1;
+			float v0[3] = { x->x, x->y, x->z };
+			Vertice* y = f.v2;
+			float v1[3] = { y->x, y->y, y->z };
+			Vertice* z = f.v3;
+			float v2[3] = { z->x, z->y, z->z };
 
 			float p[3] = { ray.posicao.x, ray.posicao.y, ray.posicao.z };
 			float d[3] = { ray.direcao.x, ray.direcao.y, ray.direcao.z };
@@ -265,6 +270,28 @@ bool shadowRay(Raio ray, Cena scene){
 	return retorno;
 }
 
+Vetor rotacionar(float angle, Vetor v, Vetor eixo){
+	float matrix[3][3];
+	float co = cos(angle);
+	float si = sin(angle);
+	float a = eixo.x;
+	float b = eixo.y;
+	float c = eixo.z;
+	matrix[0][0] = co + (1 - co)*pow(a, 2);
+	matrix[0][1] = (1 - co)*a*b + si*c;
+	matrix[0][2] = (1 - co)*a*c - si*b;
+	matrix[1][0] = (1 - co)*b*a - si*c;
+	matrix[1][1] = co + (1 - co)*pow(b, 2);
+	matrix[1][2] = (1 - co)*b*c + si*a;
+	matrix[2][0] = (1 - co)*a*c + si*b;
+	matrix[2][1] = (1 - co)*b*c - si*a;
+	matrix[2][2] = co + (1 - co)*pow(b, 2);
+	Vetor out;
+	out.x = matrix[0][0] * v.x + matrix[0][1] * v.y + matrix[0][2] * v.z;
+	out.y = matrix[1][0] * v.x + matrix[1][1] * v.y + matrix[1][2] * v.z;
+	out.z = matrix[2][0] * v.x + matrix[2][1] * v.y + matrix[2][2] * v.z;
+	return out;
+}
 
 Color trace_path(int depth, Raio ray, Cena scene, Luz luz){
 	if (depth >= 5) return Color(0,0,0);
@@ -349,9 +376,20 @@ Color trace_path(int depth, Raio ray, Cena scene, Luz luz){
 		// x = cos phi
 		// y = sen phi
 		// z = sen theta
-		direcao.x = cos(phi);
-		direcao.y = sin(phi);
-		direcao.z = sin(theta);
+		Vetor perpendicular;
+		perpendicular.z = 0;
+		if (normal.x != 0){
+			perpendicular.x = -normal.y / normal.x;
+			perpendicular.y = 1;
+			perpendicular = normalizar(perpendicular);
+		}
+		else {
+			perpendicular.x = 1;
+			perpendicular.y = 0;
+		}
+
+		direcao = rotacionar(phi, normal, perpendicular);
+		direcao = rotacionar(theta, direcao, normal);
 		
 		// the position vector is the intersection point		
 	}
@@ -435,7 +473,7 @@ Color** render(Janela jan, Cena scene, Olho o, Luz luz){
 	int xsize = jan.sizeX; // width in pixels
 	int ysize = jan.sizeY; // height in pixels
 
-	int nSamples = 1; // number of color samples per pixel
+	int nSamples = scene.npaths; // number of color samples per pixel
 
 	float count = 0, maxCount = xsize*ysize*nSamples, blockSize = maxCount / 100, blockCount = blockSize;
 	Color** img; // output img
@@ -557,15 +595,15 @@ Color** renderTexture(Janela jan, Cena scene, Olho o, Luz luz, Buffer buffer){
 			rayToLight.posicao.y = inters.y;
 			rayToLight.posicao.z = inters.z;
 
-			Intersection intersectionTexture = intersectTexture(texture.objeto, rayToLight, scene);
+			Intersection intersectionTexture = intersectTexture(texture, rayToLight, scene);
 			Objeto closestTexture = intersectionTexture.objeto;
 
 			if (intersectionTexture.hit){
 
 				Ponto pInt = intersectionTexture.p;
-				Ponto p1=texture.objeto.vertices.at(2).ponto;
-				Ponto p2 = texture.objeto.vertices.at(1).ponto;
-				Ponto p3=texture.objeto.vertices.at(3).ponto;
+				Ponto p1=texture.vertices.at(2);
+				Ponto p2 = texture.vertices.at(1);
+				Ponto p3=texture.vertices.at(3);
 
 				float x= distReta(pInt, p1,p2);
 				float y=distReta(pInt, p1, p3);
@@ -638,7 +676,18 @@ void renderScene()
 int main(int argc, char **argv)
 {
 	//Lendo arquivo sdl que descreve a cena utilizada e calculando a normal após
-	lerCena("cornel_box\\cornellroom.sdl",olho,cena,janela,luz,objetos, quadricas);
+	lerCena("cornel_box\\cornellroom.sdl",cena);
+
+	//Loading camera paramenters
+	olho = cena.olho;
+
+	//Loading view paramenters
+	janela = cena.janela;
+	luz = cena.luz;
+
+	//Loading objects of the scene
+	objetos = cena.objetos;
+	quadricas = cena.quadricas;
 
 	luz.ponto.x = 0;
 	luz.ponto.y = 3.8360;
@@ -652,88 +701,13 @@ int main(int argc, char **argv)
 	{
 		char realPath [100]= "cornel_box\\";
 		strcat(realPath, objetos.at(i).path);
-		lerObjeto(realPath, objetos.at(i).vertices, objetos.at(i).faces);
+		lerObjeto(realPath, objetos.at(i));
 		objetos.at(i).normalVertice();
 	}
 
 	//Chamando o algoritmos de renderização que inclui o Path Tracing
 	buf.buffer = render(janela,cena,olho,luz);
-	/*Janela janelaLuz;
-	janelaLuz.sizeX = janela.sizeX;
-	janelaLuz.sizeY = janela.sizeY;
-	janelaLuz.x0 = ;
-	janelaLuz.y0 = ;
-	janelaLuz.x1 = ;
-	janelaLuz.y1 = ;
-
-	buf.buffer = createTexture(janelaLuz, cena, luz,objetos.at(6));*/
-
-	vector<Vertice> vTexture;
-	vector<Face> fTexture;
-
-	Vertice v1;
-	v1.ponto.x = -2;
-	v1.ponto.y = 0;
-	v1.ponto.z = -20;
-	Vertice v2;
-	v2.ponto.x = -2;
-	v2.ponto.y = 0;
-	v2.ponto.z = -30;
-	Vertice v3;
-	v3.ponto.x = 2;
-	v3.ponto.y = 0;
-	v3.ponto.z = -30;
-	Vertice v4;
-	v4.ponto.x = 2;
-	v4.ponto.y = 0;
-	v4.ponto.z = -20;
-
-	vTexture.push_back(v1);
-	vTexture.push_back(v2);
-	vTexture.push_back(v3);
-	vTexture.push_back(v4);
-
-	Face f1;
-	f1.v1 = 1;
-	f1.v2 = 2;
-	f1.v3 = 3;
-	Face f2;
-	f2.v1 = 1;
-	f2.v2 = 3;
-	f2.v3 = 4;
-	fTexture.push_back(f1);
-	fTexture.push_back(f2);
-
-	Objeto objetoTextura;
-	objetoTextura.faces = fTexture;
-	objetoTextura.vertices = vTexture;
-	texture.objeto = objetoTextura;
-
 	
-
-	Color** buffer2 = (Color**)malloc(sizeof(Color*)*janela.sizeX);
-	texture.buffer=buffer2;
-	//Carregando textura 
-	for (int i = 0; i < janela.sizeX; i++)
-	{
-		buffer2[i] = (Color*)malloc(sizeof(Color)*janela.sizeY);
-		for (int j = 0; j < janela.sizeY; j++)
-		{
-			if (j>50 && j < 200){
-				texture.buffer[i][j].r = 0;
-				texture.buffer[i][j].g = 0;
-				texture.buffer[i][j].b = 0;
-			}
-			else{
-				texture.buffer[i][j].r = 1;
-				texture.buffer[i][j].g = 1;
-				texture.buffer[i][j].b = 1;
-			}
-		}
-	}
-
-	renderTexture(janela, cena, olho, luz, buf);
-
 	///////////////////////////////////////////OPENGL//////////////////////////////////////////////
 	//Initiating glut variables
 	glutInit(&argc, argv);
