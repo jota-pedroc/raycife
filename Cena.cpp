@@ -43,7 +43,7 @@ bool lerCena(const char* path, Cena &cena){
 		}
 		else if (strcmp(lineHeader, "light") == 0){
 			Objeto o;
-			fscanf(file, "%s %f %f %f %f\n", &o.path, &cena.luz.cor.r, &cena.luz.cor.g, &cena.luz.cor.b, &cena.luz.Ip, &cena.luz.ponto.x, &cena.luz.ponto.y, &cena.luz.ponto.z);
+			fscanf(file, "%s %f %f %f %f %f %f %f\n", &o.path, &cena.luz.cor.r, &cena.luz.cor.g, &cena.luz.cor.b, &cena.luz.Ip, &cena.luz.ponto.x, &cena.luz.ponto.y, &cena.luz.ponto.z);
 			o.isLight = true;
 			cena.objetos.push_back(o);
 			cena.luz.objeto = &o;
