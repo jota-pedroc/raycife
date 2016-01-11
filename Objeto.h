@@ -9,6 +9,22 @@
 
 using namespace std;
 
+class BoundingBox{
+public:
+	Ponto p1, p2, p3, p4;
+	Ponto p5, p6, p7, p8;
+
+	/*    p3_ _ _  p4
+		   /     /|
+	   p1 /_ _ _/ |
+		 |   _ _|_| p8
+	 	 | /    | /
+	   p5|/_ _ _|/p6
+	*/
+	void fill(float gx, float lx, float gy, float ly, float gz, float lz);
+	Ponto centro();
+};
+
 class Objeto{
 public:
 	char path[100];
@@ -16,6 +32,9 @@ public:
 	float ka, kd, ks, kt, coeficienteEspecular;
 	vector<Vertice> vertices;
 	vector<Face> faces;
+	BoundingBox boundingBox;
+	bool isLight = false;
+	float coeficienteRefracao;
 
 	void normalVertice(); // Pre-processamento. Calcula e armazena a normal de todos os vertices nas faces
 
@@ -23,13 +42,6 @@ public:
 
 	Vetor normalPonto(Ponto p, Face f);
 
-};
-
-
-
-class Texture : public Objeto{
-public:
-	Color** buffer;
 };
 
 class Quadrica : public Objeto {

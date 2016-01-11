@@ -30,7 +30,7 @@ Cena cena;
 //Loading illumination paramenters
 Luz luz;
 
-Texture texture;
+//Texture texture;
 
 //Loading objects of the scene
 vector<Objeto> objetos;
@@ -265,6 +265,7 @@ bool shadowRay(Raio ray, Cena scene){
 	bool retorno = false;
 	Intersection intersection = closestObject(ray, scene);
 	Objeto closest = intersection.objeto;
+	if (closest.isLight) return false;
 
 	if (intersection.hit) retorno = true;
 	return retorno;
@@ -306,6 +307,9 @@ Color trace_path(int depth, Raio ray, Cena scene, Luz luz){
 	if (intersection.hit == false){
 		return scene.background;
 	}
+	else if (intersection.objeto.isLight){
+		return luz.cor;
+	}
 	
 	Objeto closest = intersection.objeto;
 	Ponto inters = intersection.p;
@@ -346,17 +350,17 @@ Color trace_path(int depth, Raio ray, Cena scene, Luz luz){
 	ray2.direcao = normalizar(ray2.direcao);
 
 
-	//bool sombra = shadowRay(ray2,scene);
+	bool sombra = shadowRay(ray2,scene);
 
 	////Definindo o valor da cor local
 	Color corLocal;
-	//if (sombra){
-	//	corLocal.r = 0;
-	//	corLocal.g = 0;
-	//	corLocal.b = 0;
-	//}else{
+	if (sombra){
+		corLocal.r = 0;
+		corLocal.g = 0;
+		corLocal.b = 0;
+	}else{
 		corLocal = csum(csum(difusa, Color(ambiente)), especular);
-	//}
+	}
 	
 
 	// -------------------------recursion for contribution from other objects---------------------------------
@@ -407,15 +411,13 @@ Color trace_path(int depth, Raio ray, Cena scene, Luz luz){
 		float cos = escalar(ray.direcao, normal);
 		float n1, n2;
 		if (cos > 0){
-			n1 = closest.kt;
-			n1 = 1.3321;
+			n1 = closest.coeficienteRefracao;
 			n2 = 1;
 			direcao = calcularRefracao(n1, n2, ray.direcao, normal);
 		}
 		else {
 			n1 = 1;
-			n2 = closest.kt;
-			n2 = 1.3321;
+			n2 = closest.coeficienteRefracao;
 			direcao = calcularRefracao(n1, n2, ray.direcao, kprod(-1, normal));
 		}
 	}
@@ -432,7 +434,10 @@ Color trace_path(int depth, Raio ray, Cena scene, Luz luz){
 
 	// -----------------------------------output--------------------------------------
 	//*****Testar diferentes pesos*****
-	output = csum(recursion, corLocal);
+	//output = csum(recursion, corLocal);
+	output.r = recursion.r * 0.4 + corLocal.r * 0.6;
+	output.g = recursion.g * 0.4 + corLocal.g * 0.6;
+	output.b = recursion.b * 0.4 + corLocal.b * 0.6;
 	return output;
 }
 
@@ -495,6 +500,9 @@ Color** render(Janela jan, Cena scene, Olho o, Luz luz){
 			sum.g = 0;
 			sum.b = 0;
 			ray = cameraRay(i, j, jan, o);
+			if (i > 100 && i < 110 && j > 180 && j < 190){
+				int debug = 2 + 2;
+			}
 			for (int k = 0; k < nSamples; k++)
 			{
 				
@@ -524,106 +532,6 @@ Color** render(Janela jan, Cena scene, Olho o, Luz luz){
 	return img;
 }
 
-Color** createTexture(Janela jan, Cena scene, Luz luz, Objeto objeto){
-	int xsize = jan.sizeX; // width in pixels
-	int ysize = jan.sizeY; // height in pixels
-	int nSamples = 2; // number of color samples per pixel
-	float count = 0, maxCount = xsize*ysize*nSamples, blockSize = maxCount / 100, blockCount = blockSize;
-	Color** img; // output img
-	Raio ray; // Camera to window variable, used for each different pixel
-
-	img = (Color**)malloc(sizeof(Color*)*xsize); // Array instanciation	
-	
-	Olho o;
-	o.x = luz.ponto.x;
-	o.y = luz.ponto.y;
-	o.z = luz.ponto.z;
-
-	//-----------------------------------------------MAIN LOOP----------------------------------------------
-
-	for (int i = 0; i < xsize; i++)
-	{
-		img[i] = (Color*)malloc(sizeof(Color)*ysize); // Array instanciation
-		for (int j = 0; j < ysize; j++)
-		{
-			ray = cameraRay(i, j, jan, o);
-
-			//Calcular o raio que reflete ate a luz do ponto que colidiu
-			Intersection intersection = intersectTexture(objeto,ray, scene);
-
-			if (intersection.hit){
-				img[i][j] = Color(0, 0, 0);
-			}
-			else{
-				img[i][j] = Color(255, 255, 255);
-			}
-		}
-	}
-
-	return img;
-}
-
-
-
-Color** renderTexture(Janela jan, Cena scene, Olho o, Luz luz, Buffer buffer){
-
-	int xsize = jan.sizeX; // width in pixels
-	int ysize = jan.sizeY; // height in pixels
-	int nSamples = 20; // number of color samples per pixel
-	float count = 0, maxCount = xsize*ysize*nSamples, blockSize = maxCount / 100, blockCount = blockSize;
-	Color** img=buffer.buffer; // output img
-	Raio ray; // Camera to window variable, used for each different pixel
-
-	//-----------------------------------------------MAIN LOOP----------------------------------------------
-	
-	for (int i = 0; i < xsize; i++)
-	{
-		for (int j = 0; j < ysize; j++)
-		{
-			ray = cameraRay(i, j, jan, o);
-
-			//Calcular o raio que reflete ate a luz do ponto que colidiu
-			Intersection intersection = closestObject(ray, scene);
-			Objeto closest = intersection.objeto;
-			Ponto inters = intersection.p;
-			Vetor toLight = defVetor(inters, luz.ponto);
-			toLight = normalizar(toLight);
-			//Gerando raio direcionado para a luz
-			Raio rayToLight;
-			rayToLight.direcao = toLight;
-			rayToLight.posicao.x = inters.x;
-			rayToLight.posicao.y = inters.y;
-			rayToLight.posicao.z = inters.z;
-
-			Intersection intersectionTexture = intersectTexture(texture, rayToLight, scene);
-			Objeto closestTexture = intersectionTexture.objeto;
-
-			if (intersectionTexture.hit){
-
-				Ponto pInt = intersectionTexture.p;
-				Ponto p1=texture.vertices.at(2);
-				Ponto p2 = texture.vertices.at(1);
-				Ponto p3=texture.vertices.at(3);
-
-				float x= distReta(pInt, p1,p2);
-				float y=distReta(pInt, p1, p3);
-
-				float checkx = defVetor(p1,p2).norma();
-				float checkz = defVetor(p1, p3).norma();
-
-				int valorX =floor( (jan.sizeX*x) / defVetor(p1, p2).norma());
-				int valorY = floor((jan.sizeY*y) / defVetor(p1, p3).norma());
-
-				Color c = texture.buffer[valorX][valorY];
-				cout << valorX << " " << valorY << endl;
-				
-				img[i][j] = Color(c.r,c.g,c.b);
-			}		
-		}
-	}
-
-	return img;
-}
 
 void myinit()
 {
@@ -689,9 +597,7 @@ int main(int argc, char **argv)
 	objetos = cena.objetos;
 	quadricas = cena.quadricas;
 
-	luz.ponto.x = 0;
-	luz.ponto.y = 3.8360;
-	luz.ponto.z = -25.0f;
+	
 	window_height = janela.sizeY;
 	window_width = janela.sizeX;
 

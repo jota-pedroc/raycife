@@ -43,7 +43,8 @@ bool lerCena(const char* path, Cena &cena){
 		}
 		else if (strcmp(lineHeader, "light") == 0){
 			Objeto o;
-			fscanf(file, "%s %f %f %f %f\n", &o.path, &cena.luz.cor.r, &cena.luz.cor.g, &cena.luz.cor.b, &cena.luz.Ip);
+			fscanf(file, "%s %f %f %f %f\n", &o.path, &cena.luz.cor.r, &cena.luz.cor.g, &cena.luz.cor.b, &cena.luz.Ip, &cena.luz.ponto.x, &cena.luz.ponto.y, &cena.luz.ponto.z);
+			o.isLight = true;
 			cena.objetos.push_back(o);
 			cena.luz.objeto = &o;
 		}
@@ -58,13 +59,13 @@ bool lerCena(const char* path, Cena &cena){
 		}
 		else if (strcmp(lineHeader, "object") == 0){
 			Objeto o;
-			fscanf(file, "%s %f %f %f %f %f %f %f %f %f\n", &o.path, &o.cor.r, &o.cor.g, &o.cor.b, &o.ka, &o.kd, &o.ks, &o.kt, &o.coeficienteEspecular);
+			fscanf(file, "%s %f %f %f %f %f %f %f %f %f\n", &o.path, &o.cor.r, &o.cor.g, &o.cor.b, &o.ka, &o.kd, &o.ks, &o.kt, &o.coeficienteEspecular, &o.coeficienteRefracao);
 			cena.objetos.push_back(o);
 		}
 		else if (strcmp(lineHeader, "quadric") == 0){
 			Quadrica q;
-			fscanf(file, "%f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f\n", &q.a, &q.b, &q.c, &q.d, &q.e, &q.f, &q.g, &q.h, &q.j, &q.k, &q.cor.r, &q.cor.g, &q.cor.b,
-				&q.ka, &q.kd, &q.ks, &q.kt, &q.coeficienteEspecular);
+			fscanf(file, "%f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f\n", &q.a, &q.b, &q.c, &q.d, &q.e, &q.f, &q.g, &q.h, &q.j, &q.k, &q.cor.r, &q.cor.g, &q.cor.b,
+				&q.ka, &q.kd, &q.ks, &q.kt, &q.coeficienteEspecular, &q.coeficienteRefracao);
 			cena.quadricas.push_back(q);
 		}
 		else{

@@ -1,6 +1,48 @@
 #include "stdafx.h"
 #include "Objeto.h"
 
+void BoundingBox::fill(float gx, float lx, float gy, float ly, float gz, float lz){
+	this->p1.x = lx;
+	this->p1.y = gy;
+	this->p1.z = gz;
+
+	this->p2.x = gx;
+	this->p2.y = gy;
+	this->p2.z = gz;
+
+	this->p3.x = lx;
+	this->p3.y = gy;
+	this->p3.z = lz;
+
+	this->p4.x = gx;
+	this->p4.y = gy;
+	this->p4.z = lz;
+
+	this->p5.x = lx;
+	this->p5.y = ly;
+	this->p5.z = gz;
+
+	this->p6.x = gx;
+	this->p6.y = ly;
+	this->p6.z = gz;
+
+	this->p7.x = lx;
+	this->p7.y = ly;
+	this->p7.z = lz;
+
+	this->p8.x = gx;
+	this->p8.y = ly;
+	this->p8.z = lz;
+}
+
+Ponto BoundingBox::centro(){
+	Ponto out;
+	out.x = 0;
+	out.y = 0;
+	out.z = 0;
+	return out;
+}
+
 void Objeto::normalVertice(){
 	for (int i = 0; i < faces.size(); i++)
 	{
@@ -91,6 +133,9 @@ bool lerObjeto(const char* path, Objeto &objeto){
 		getchar();
 		return false;
 	}
+	
+	float gx = INT_MIN, lx = INT_MAX, gy = INT_MIN, ly = INT_MAX, gz = INT_MIN, lz = INT_MAX;
+
 
 	while (1){
 
@@ -107,6 +152,13 @@ bool lerObjeto(const char* path, Objeto &objeto){
 			Vertice vertex;
 			fscanf(file, "%f %f %f\n", &vertex.x, &vertex.y, &vertex.z);
 			objeto.vertices.push_back(vertex);
+
+			if (vertex.x > gx) gx = vertex.x;
+			if (vertex.x < lx) lx = vertex.x;
+			if (vertex.y > gy) gy = vertex.y;
+			if (vertex.y < ly) ly = vertex.y;
+			if (vertex.z > gz) gz = vertex.z;
+			if (vertex.z < lz) lz = vertex.z;
 		}
 		else if (strcmp(lineHeader, "f") == 0){
 			std::string vertex1, vertex2, vertex3;
@@ -134,6 +186,8 @@ bool lerObjeto(const char* path, Objeto &objeto){
 		currentFace.v2 = &objeto.vertices.at(currentFace.v2Index - 1);
 		currentFace.v3 = &objeto.vertices.at(currentFace.v3Index - 1);
 	}
+
+	objeto.boundingBox.fill(gx, lx, gy, ly, gz, lz);
 
 	return true;
 }
