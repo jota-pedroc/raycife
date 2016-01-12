@@ -7,11 +7,16 @@
 #include <fstream>
 #include <string>
 #include <ctime>
+#include <thread>
 
 #include "Cena.h"
 #include "Objeto.h"
 #include "Raio.h"
 
+using namespace std;
+
+#define N_THREADS 4
+#define MAX_RECURSION_DEPTH 3
 
 Buffer buf;
 //Recebe 800x600 como defalt mas é alterada dependendo do arquivo de entrada
@@ -60,7 +65,7 @@ void crossProduct(float* result, float* v1, float* v2){
 	result[2] = v1[0] * v2[1] - v1[1] * v2[0];
 }
 
-int rayIntersectsTriangle(float *p, float *d,
+float rayIntersectsTriangle(float *p, float *d,
 	float *v0, float *v1, float *v2) {
 
 	float e1[3], e2[3], h[3], s[3], q[3];
@@ -295,7 +300,7 @@ Vetor rotacionar(float angle, Vetor v, Vetor eixo){
 }
 
 Color trace_path(int depth, Raio ray, Cena scene, Luz luz){
-	if (depth >= 5) return Color(0,0,0);
+	if (depth >= MAX_RECURSION_DEPTH) return Color(0,0,0);
 
 	//cout << depth << endl;
 
@@ -434,10 +439,10 @@ Color trace_path(int depth, Raio ray, Cena scene, Luz luz){
 
 	// -----------------------------------output--------------------------------------
 	//*****Testar diferentes pesos*****
-	//output = csum(recursion, corLocal);
-	output.r = recursion.r * 0.4 + corLocal.r * 0.6;
-	output.g = recursion.g * 0.4 + corLocal.g * 0.6;
-	output.b = recursion.b * 0.4 + corLocal.b * 0.6;
+	output = csum(recursion, corLocal);
+	//output.r = recursion.r * 0.4 + corLocal.r * 0.6;
+	//output.g = recursion.g * 0.4 + corLocal.g * 0.6;
+	//output.b = recursion.b * 0.4 + corLocal.b * 0.6;
 	return output;
 }
 
@@ -470,6 +475,64 @@ Raio cameraRay(int x, int y, Janela jan, Olho o){
 	return output;
 }
 
+void renderThread(int id, Color** output, int x, int xmax, int y, int ymax, Janela jan, Cena scene, Olho o, Luz luz){
+	/*
+	* Render a image using the path tracing algorithm for the given scene, camera and window.
+	*/
+
+	int xsize = xmax - x; // width in pixels
+	int ysize = ymax - y; // height in pixels
+
+	int nSamples = scene.npaths; // number of color samples per pixel
+
+	float count = 0, maxCount = xsize*ysize*nSamples, blockSize = maxCount / 100, blockCount = blockSize;
+	Color** img = output; // output img
+	Color sum, sample; // Acumulator and sample variables, used for each different pixel and pixel sample, respectively
+	Raio ray; // Camera to window variable, used for each different pixel
+
+
+	//-----------------------------------------------MAIN LOOP----------------------------------------------
+	// For each pixel, take nSample of colors and average them. The average is the color of that pixel.
+	time_t startTime;
+	time(&startTime);
+	for (int i = x; i < xmax; i++)
+	{
+		for (int j = y; j < ymax; j++)
+		{
+			sum.r = 0;
+			sum.g = 0;
+			sum.b = 0;
+			ray = cameraRay(i, j, jan, o);
+			if (i > 100 && i < 110 && j > 180 && j < 190){
+				int debug = 2 + 2;
+			}
+			for (int k = 0; k < nSamples; k++)
+			{
+
+				sample = trace_path(0, ray, scene, luz);
+				sum = csum(sum, sample);
+				count++;
+				if (count > blockCount){
+					time_t elapsed = time(nullptr) - startTime;
+					//time_t remaining = (elapsed *(1 - (count / maxCount))) / (count / maxCount);
+					printf("Thread %d: Processing... %d%% (%d/%d). Elapsed time: %ds.\n", id, (int)((count / maxCount) * 100), (int)count, (int)maxCount, elapsed);
+					blockCount += blockSize;
+				}
+
+			}
+
+
+			Color out = Color(sum.r / nSamples, sum.g / nSamples, sum.b / nSamples);
+
+			//Applying Tone Mapping 
+			Color newOut = Color(out.r / (out.r + cena.tonemapping), out.g / (out.g + cena.tonemapping), out.b / (out.b + cena.tonemapping));
+			img[i][j] = newOut;
+
+			//img[i][j] = Color(sum.r/nSamples, sum.g/nSamples, sum.b/nSamples);
+		}
+	}
+}
+
 Color** render(Janela jan, Cena scene, Olho o, Luz luz){
 	/*
 	* Render a image using the path tracing algorithm for the given scene, camera and window.
@@ -485,7 +548,7 @@ Color** render(Janela jan, Cena scene, Olho o, Luz luz){
 	Color sum, sample; // Acumulator and sample variables, used for each different pixel and pixel sample, respectively
 	Raio ray; // Camera to window variable, used for each different pixel
 
-	img = (Color**) malloc(sizeof(Color*)*xsize); // Array instanciation	
+	img = (Color**)malloc(sizeof(Color*)*xsize); // Array instanciation	
 
 	//-----------------------------------------------MAIN LOOP----------------------------------------------
 	// For each pixel, take nSample of colors and average them. The average is the color of that pixel.
@@ -493,7 +556,7 @@ Color** render(Janela jan, Cena scene, Olho o, Luz luz){
 	time(&startTime);
 	for (int i = 0; i < xsize; i++)
 	{
-		img[i] = (Color*) malloc(sizeof(Color)*ysize); // Array instanciation
+		img[i] = (Color*)malloc(sizeof(Color)*ysize); // Array instanciation
 		for (int j = 0; j < ysize; j++)
 		{
 			sum.r = 0;
@@ -505,22 +568,22 @@ Color** render(Janela jan, Cena scene, Olho o, Luz luz){
 			}
 			for (int k = 0; k < nSamples; k++)
 			{
-				
+
 				sample = trace_path(0, ray, scene, luz);
 				sum = csum(sum, sample);
 				count++;
 				if (count > blockCount){
 					time_t elapsed = time(nullptr) - startTime;
 					//time_t remaining = (elapsed *(1 - (count / maxCount))) / (count / maxCount);
-					printf("Processing... %d%% (%d/%d). Elapsed time: %ds.\n", (int)((count / maxCount) * 100), (int)count, (int) maxCount, elapsed);
+					printf("Processing... %d%% (%d/%d). Elapsed time: %ds.\n", (int)((count / maxCount) * 100), (int)count, (int)maxCount, elapsed);
 					blockCount += blockSize;
 				}
-				
+
 			}
-			
+
 
 			Color out = Color(sum.r / nSamples, sum.g / nSamples, sum.b / nSamples);
-			
+
 			//Applying Tone Mapping 
 			Color newOut = Color(out.r / (out.r + cena.tonemapping), out.g / (out.g + cena.tonemapping), out.b / (out.b + cena.tonemapping));
 			img[i][j] = newOut;
@@ -612,7 +675,32 @@ int main(int argc, char **argv)
 	}
 
 	//Chamando o algoritmos de renderização que inclui o Path Tracing
-	buf.buffer = render(janela,cena,olho,luz);
+	Color** img = (Color**) malloc(sizeof(Color*)*janela.sizeX);
+	for (int i = 0; i < janela.sizeX; i++)
+	{
+		img[i] = (Color*) malloc(sizeof(Color)*janela.sizeY);
+	}
+
+	thread threads[N_THREADS];
+	//int blockX = janela.sizeX / N_THREADS;
+	int blockX = janela.sizeX;
+	int blockY = janela.sizeY / N_THREADS;
+	int x = 0, y = 0, xmax = blockX, ymax = blockY;
+	for (int i = 0; i < N_THREADS; i++)
+	{
+		threads[i] = thread(renderThread, i, img, x, xmax, y, ymax, janela, cena, cena.olho, cena.luz);
+		//x += blockX;
+		//xmax += blockX;
+		y += blockY;
+		ymax += blockY;
+	}
+	for (int i = 0; i < N_THREADS; i++)
+	{
+		threads[i].join();
+	}
+	buf.buffer = img;
+
+	//buf.buffer = render(janela,cena,olho,luz);
 	
 	///////////////////////////////////////////OPENGL//////////////////////////////////////////////
 	//Initiating glut variables
