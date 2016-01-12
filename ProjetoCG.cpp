@@ -7,11 +7,16 @@
 #include <fstream>
 #include <string>
 #include <ctime>
+#include <thread>
 
 #include "Cena.h"
 #include "Objeto.h"
 #include "Raio.h"
 
+using namespace std;
+
+#define N_THREADS 4
+#define MAX_RECURSION_DEPTH 3
 
 Buffer buf;
 //Recebe 800x600 como defalt mas é alterada dependendo do arquivo de entrada
@@ -30,7 +35,9 @@ Cena cena;
 //Loading illumination paramenters
 Luz luz;
 
-//Texture texture;
+Color** texture;
+int textureX = 200;
+int textureY = 200;
 
 //Loading objects of the scene
 vector<Objeto> objetos;
@@ -217,7 +224,6 @@ Intersection closestObject(Raio ray, Cena scene){
 	return out;
 }
 
-
 Intersection intersectTexture(Objeto  texture, Raio ray, Cena scene){
 	Intersection out;
 	Objeto current;
@@ -225,38 +231,190 @@ Intersection intersectTexture(Objeto  texture, Raio ray, Cena scene){
 	Face face;
 	float closestDist = INT_MAX;
 
-		current = texture;
-		currentFaces = current.faces;
-		for (int j = 0; j < currentFaces.size(); j++)
-		{
-			Face f = currentFaces.at(j);
-			Vertice* x = f.v1;
-			float v0[3] = { x->x, x->y, x->z };
-			Vertice* y = f.v2;
-			float v1[3] = { y->x, y->y, y->z };
-			Vertice* z = f.v3;
-			float v2[3] = { z->x, z->y, z->z };
+	current = texture;
+	currentFaces = current.faces;
+	for (int j = 0; j < currentFaces.size(); j++)
+	{
+		Face f = currentFaces.at(j);
+		Vertice* x = f.v1;
+		float v0[3] = { x->x, x->y, x->z };
+		Vertice* y = f.v2;
+		float v1[3] = { y->x, y->y, y->z };
+		Vertice* z = f.v3;
+		float v2[3] = { z->x, z->y, z->z };
 
-			float p[3] = { ray.posicao.x, ray.posicao.y, ray.posicao.z };
-			float d[3] = { ray.direcao.x, ray.direcao.y, ray.direcao.z };
-			float t = rayIntersectsTriangle(p, d, v0, v1, v2);
-			if (t > 0 && t < closestDist){
-				closestDist = t;
-				out.objeto = current;
-				out.p.x = ray.direcao.x*t + ray.posicao.x;
-				out.p.y = ray.direcao.y*t + ray.posicao.y;
-				out.p.z = ray.direcao.z*t + ray.posicao.z;
-				out.normal = current.normalPonto(out.p, f);
+		float p[3] = { ray.posicao.x, ray.posicao.y, ray.posicao.z };
+		float d[3] = { ray.direcao.x, ray.direcao.y, ray.direcao.z };
+		float t = rayIntersectsTriangle(p, d, v0, v1, v2);
+		if (t > 0 && t < closestDist){
+			closestDist = t;
+			out.objeto = current;
+			out.p.x = ray.direcao.x*t + ray.posicao.x;
+			out.p.y = ray.direcao.y*t + ray.posicao.y;
+			out.p.z = ray.direcao.z*t + ray.posicao.z;
+			out.normal = current.normalPonto(out.p, f);
+		}
+	}
+	if (closestDist != INT_MAX){
+		out.hit = true;
+		return out;
+	}
+	else {
+		out.hit = false;
+		return out;
+	}
+}
+
+Raio cameraRay(int x, int y, Janela jan, Olho o){
+	/*
+	* Trace a ray from the camera to the pixel (x,y) on the window
+	*/
+
+	Raio output; // Output variable
+	float xw, yw, zw, sizexw, sizeyw; // Pixel location and window size on world coordinates
+	Vetor direcao, posicao; // Ray's direction and position
+
+	sizexw = jan.x1 - jan.x0;
+	sizeyw = jan.y0 - jan.y1;
+	xw = ((float)x / jan.sizeX)*sizexw + jan.x0;
+	yw = ((float)y / jan.sizeY)*sizeyw + jan.y1;
+	zw = 0;
+
+	posicao.x = o.x;
+	posicao.y = o.y;
+	posicao.z = o.z;
+
+	direcao.x = xw - o.x;
+	direcao.y = yw - o.y;
+	direcao.z = zw - o.z;
+
+	output.posicao = posicao;
+	output.direcao = direcao;
+	output.direcao = normalizar(output.direcao);
+	return output;
+}
+
+Raio cameraTexture(int x, int y, int bufferSizeX, int bufferSizeY, Luz l){
+	/*
+	* Trace a ray from the camera to the pixel (x,y) on the window
+	*/
+
+	Raio output; // Output variable
+	float xw, yw, zw, sizexw, sizezw; // Pixel location and window size on world coordinates
+	Vetor direcao, posicao; // Ray's direction and position
+
+	float x0 = -3.822;
+	float y0 = -32.76;
+	float x1 = 3.822;
+	float y1 = -16.59;
+
+	sizexw = x1 - x0;
+	sizezw = y0 - y1;
+	xw = ((float)x / bufferSizeX)*sizexw + x0;
+	zw = ((float)y / bufferSizeY)*sizezw + y1;
+	yw = 1.0f;
+
+	posicao.x = l.ponto.x;
+	posicao.y = l.ponto.y;
+	posicao.z = l.ponto.z;
+
+	direcao.x = xw - l.ponto.x;
+	direcao.y = yw - l.ponto.y;
+	direcao.z = zw - l.ponto.z;
+
+	output.posicao = posicao;
+	output.direcao = direcao;
+	output.direcao = normalizar(output.direcao);
+	return output;
+}
+
+
+Color** createTexture(Objeto objectTexture){
+	int xsize = textureX; // width in pixels
+	int ysize = textureY; // height in pixels
+
+	Color** img; // output img
+	Raio ray; // Camera to window variable, used for each different pixel
+
+	img = (Color**)malloc(sizeof(Color*)*xsize); // Array instanciation	
+
+	//-----------------------------------------------MAIN LOOP----------------------------------------------
+
+	for (int i = 0; i < xsize; i++)
+	{
+		img[i] = (Color*)malloc(sizeof(Color)*ysize); // Array instanciation
+		for (int j = 0; j < ysize; j++)
+		{
+			ray = cameraTexture(i, j, xsize, ysize, luz);
+
+			Intersection intersect = intersectTexture(objectTexture, ray, cena);
+
+			if (intersect.hit){
+				Color out = Color(0, 0, 0);
+				img[i][j] = out;
+			}
+			else{
+				Color out = Color(255, 255, 255);
+				img[i][j] = out;
+			}
+		}
+	}
+
+	return img;
+}
+
+Color** applyTexture(Objeto objectTexture, Color** buffer){
+	int xsize = 200; // width in pixels
+	int ysize = 200; // height in pixels
+
+	Color** img; // output img
+	Raio ray; // Camera to window variable, used for each different pixel
+
+	img = (Color**)malloc(sizeof(Color*)*xsize); // Array instanciation	
+
+	//-----------------------------------------------MAIN LOOP----------------------------------------------
+
+	for (int i = 0; i < xsize; i++)
+	{
+		img[i] = (Color*)malloc(sizeof(Color)*ysize); // Array instanciation
+		for (int j = 0; j < ysize; j++)
+		{
+			ray = cameraRay(i, j,janela,olho);
+
+			Intersection intersect = closestObject(ray,cena);
+
+			if (intersect.hit){//Tests if the ray hits any object at the scene
+				Ponto hitPoint = intersect.p;
+
+				//Cast another ray in the light direction in order to get the texture
+				Vetor newVector = defVetor(hitPoint, luz.ponto);
+				newVector = normalizar(newVector); //normalizing it
+				Raio newRay;
+				newRay.direcao = newVector;
+				newRay.posicao.x = hitPoint.x;
+				newRay.posicao.y = hitPoint.y;
+				newRay.posicao.z = hitPoint.z;
+				Intersection planeIntersect = intersectTexture(objectTexture,newRay,cena);
+
+				if (planeIntersect.hit){//If hit the plane continue
+					float x0=objectTexture.vertices.at(2).x;
+					float x1 = objectTexture.vertices.at(0).x;
+					float z0 = objectTexture.vertices.at(2).z;
+					float z1 = objectTexture.vertices.at(0).z;
+					Ponto p = planeIntersect.p;
+
+					int mapX = floor(((p.x - x0)*textureX) / (x1-x0));
+					int mapY = floor(((p.z- z0)*textureY) / (z1 - z0));
+					
+					if (texture[mapX][mapY].r == 0){//Verifies on the texture if it is a shadow point
+						buffer[i][j] = Color(0,0,0);
+					}
 				}
+			}
 		}
-		if (closestDist != INT_MAX){
-			out.hit = true;
-			return out;
-		}
-		else {
-			out.hit = false;
-			return out;
-		}
+	}
+
+	return img;
 }
 
 
@@ -295,7 +453,7 @@ Vetor rotacionar(float angle, Vetor v, Vetor eixo){
 }
 
 Color trace_path(int depth, Raio ray, Cena scene, Luz luz){
-	if (depth >= 5) return Color(0,0,0);
+	if (depth >= MAX_RECURSION_DEPTH) return Color(0,0,0);
 
 	//cout << depth << endl;
 
@@ -354,13 +512,13 @@ Color trace_path(int depth, Raio ray, Cena scene, Luz luz){
 
 	////Definindo o valor da cor local
 	Color corLocal;
-	if (sombra){
+	/*if (sombra){
 		corLocal.r = 0;
 		corLocal.g = 0;
 		corLocal.b = 0;
-	}else{
+	}else{*/
 		corLocal = csum(csum(difusa, Color(ambiente)), especular);
-	}
+	//}
 	
 
 	// -------------------------recursion for contribution from other objects---------------------------------
@@ -438,40 +596,74 @@ Color trace_path(int depth, Raio ray, Cena scene, Luz luz){
 
 	// -----------------------------------output--------------------------------------
 	//*****Testar diferentes pesos*****
-	//output = csum(recursion, corLocal);
+
 	output.r = recursion.r  + corLocal.r ;
 	output.g = recursion.g  + corLocal.g ;
 	output.b = recursion.b  + corLocal.b ;
+	
+	//output.r = recursion.r * 0.4 + corLocal.r * 0.6;
+	//output.g = recursion.g * 0.4 + corLocal.g * 0.6;
+	//output.b = recursion.b * 0.4 + corLocal.b * 0.6;
+
 	return output;
 }
 
-Raio cameraRay(int x, int y, Janela jan, Olho o){
-	/* 
-	* Trace a ray from the camera to the pixel (x,y) on the window 
+void renderThread(int id, Color** output, int x, int xmax, int y, int ymax, Janela jan, Cena scene, Olho o, Luz luz){
+	/*
+	* Render a image using the path tracing algorithm for the given scene, camera and window.
 	*/
 
-	Raio output; // Output variable
-	float xw, yw, zw, sizexw, sizeyw; // Pixel location and window size on world coordinates
-	Vetor direcao, posicao; // Ray's direction and position
+	int xsize = xmax - x; // width in pixels
+	int ysize = ymax - y; // height in pixels
 
-	sizexw = jan.x1 - jan.x0;
-	sizeyw = jan.y0 - jan.y1;
-	xw = ((float)x / jan.sizeX)*sizexw + jan.x0;
-	yw = ((float)y / jan.sizeY)*sizeyw + jan.y1;
-	zw = 0;
+	int nSamples = scene.npaths; // number of color samples per pixel
 
-	posicao.x = o.x;
-	posicao.y = o.y;
-	posicao.z = o.z;
-	
-	direcao.x = xw - o.x;
-	direcao.y = yw - o.y;
-	direcao.z = zw - o.z;
-	
-	output.posicao = posicao;
-	output.direcao = direcao;
-	output.direcao = normalizar(output.direcao);
-	return output;
+	float count = 0, maxCount = xsize*ysize*nSamples, blockSize = maxCount / 100, blockCount = blockSize;
+	Color** img = output; // output img
+	Color sum, sample; // Acumulator and sample variables, used for each different pixel and pixel sample, respectively
+	Raio ray; // Camera to window variable, used for each different pixel
+
+
+	//-----------------------------------------------MAIN LOOP----------------------------------------------
+	// For each pixel, take nSample of colors and average them. The average is the color of that pixel.
+	time_t startTime;
+	time(&startTime);
+	for (int i = x; i < xmax; i++)
+	{
+		for (int j = y; j < ymax; j++)
+		{
+			sum.r = 0;
+			sum.g = 0;
+			sum.b = 0;
+			ray = cameraRay(i, j, jan, o);
+			if (i > 100 && i < 110 && j > 180 && j < 190){
+				int debug = 2 + 2;
+			}
+			for (int k = 0; k < nSamples; k++)
+			{
+
+				sample = trace_path(0, ray, scene, luz);
+				sum = csum(sum, sample);
+				count++;
+				if (count > blockCount){
+					time_t elapsed = time(nullptr) - startTime;
+					//time_t remaining = (elapsed *(1 - (count / maxCount))) / (count / maxCount);
+					printf("Thread %d: Processing... %d%% (%d/%d). Elapsed time: %ds.\n", id, (int)((count / maxCount) * 100), (int)count, (int)maxCount, elapsed);
+					blockCount += blockSize;
+				}
+
+			}
+
+
+			Color out = Color(sum.r / nSamples, sum.g / nSamples, sum.b / nSamples);
+
+			//Applying Tone Mapping 
+			Color newOut = Color(out.r / (out.r + cena.tonemapping), out.g / (out.g + cena.tonemapping), out.b / (out.b + cena.tonemapping));
+			img[i][j] = newOut;
+
+			//img[i][j] = Color(sum.r/nSamples, sum.g/nSamples, sum.b/nSamples);
+		}
+	}
 }
 
 Color** render(Janela jan, Cena scene, Olho o, Luz luz){
@@ -489,7 +681,7 @@ Color** render(Janela jan, Cena scene, Olho o, Luz luz){
 	Color sum, sample; // Acumulator and sample variables, used for each different pixel and pixel sample, respectively
 	Raio ray; // Camera to window variable, used for each different pixel
 
-	img = (Color**) malloc(sizeof(Color*)*xsize); // Array instanciation	
+	img = (Color**)malloc(sizeof(Color*)*xsize); // Array instanciation	
 
 	//-----------------------------------------------MAIN LOOP----------------------------------------------
 	// For each pixel, take nSample of colors and average them. The average is the color of that pixel.
@@ -497,7 +689,7 @@ Color** render(Janela jan, Cena scene, Olho o, Luz luz){
 	time(&startTime);
 	for (int i = 0; i < xsize; i++)
 	{
-		img[i] = (Color*) malloc(sizeof(Color)*ysize); // Array instanciation
+		img[i] = (Color*)malloc(sizeof(Color)*ysize); // Array instanciation
 		for (int j = 0; j < ysize; j++)
 		{
 			sum.r = 0;
@@ -509,22 +701,22 @@ Color** render(Janela jan, Cena scene, Olho o, Luz luz){
 			}
 			for (int k = 0; k < nSamples; k++)
 			{
-				
+
 				sample = trace_path(0, ray, scene, luz);
 				sum = csum(sum, sample);
 				count++;
 				if (count > blockCount){
 					time_t elapsed = time(nullptr) - startTime;
 					//time_t remaining = (elapsed *(1 - (count / maxCount))) / (count / maxCount);
-					printf("Processing... %d%% (%d/%d). Elapsed time: %ds.\n", (int)((count / maxCount) * 100), (int)count, (int) maxCount, elapsed);
+					printf("Processing... %d%% (%d/%d). Elapsed time: %ds.\n", (int)((count / maxCount) * 100), (int)count, (int)maxCount, elapsed);
 					blockCount += blockSize;
 				}
-				
+
 			}
-			
+
 
 			Color out = Color(sum.r / nSamples, sum.g / nSamples, sum.b / nSamples);
-			
+
 			//Applying Tone Mapping 
 			Color newOut = Color(out.r / (out.r + cena.tonemapping), out.g / (out.g + cena.tonemapping), out.b / (out.b + cena.tonemapping));
 			img[i][j] = newOut;
@@ -596,7 +788,11 @@ int main(int argc, char **argv)
 	//Loading view paramenters
 	janela = cena.janela;
 	luz = cena.luz;
-
+	luz.ponto.x = -3.8220;
+	luz.ponto.y = 3.8360;
+	luz.ponto.z = -32.7600; //----------->light see how to load the file
+	
+		  
 	//Loading objects of the scene
 	objetos = cena.objetos;
 	quadricas = cena.quadricas;
@@ -616,7 +812,46 @@ int main(int argc, char **argv)
 	}
 
 	//Chamando o algoritmos de renderização que inclui o Path Tracing
-	buf.buffer = render(janela,cena,olho,luz);
+	Color** img = (Color**) malloc(sizeof(Color*)*janela.sizeX);
+	for (int i = 0; i < janela.sizeX; i++)
+	{
+		img[i] = (Color*) malloc(sizeof(Color)*janela.sizeY);
+	}
+
+	thread threads[N_THREADS];
+	//int blockX = janela.sizeX / N_THREADS;
+	int blockX = janela.sizeX;
+	int blockY = janela.sizeY / N_THREADS;
+	int x = 0, y = 0, xmax = blockX, ymax = blockY;
+	for (int i = 0; i < N_THREADS; i++)
+	{
+		threads[i] = thread(renderThread, i, img, x, xmax, y, ymax, janela, cena, cena.olho, cena.luz);
+		//x += blockX;
+		//xmax += blockX;
+		y += blockY;
+		ymax += blockY;
+	}
+	for (int i = 0; i < N_THREADS; i++)
+	{
+		threads[i].join();
+	}
+	buf.buffer = img;
+
+	//buf.buffer = render(janela,cena,olho,luz);
+
+	//Creating texture and storing into a array
+	texture=createTexture(objetos.at(4));
+
+	//Carregando o objeto que representa o plano da textura
+	Objeto textureObject;
+	char realPath[100] = "cornel_box\\";
+	strcat(realPath, "texture.obj");
+	lerObjeto(realPath, textureObject);
+
+	//Applying texture to the scene
+	objetos.erase(objetos.begin()+4);//removes the cube which generated the texture
+	applyTexture(textureObject,buf.buffer);
+	
 	
 	///////////////////////////////////////////OPENGL//////////////////////////////////////////////
 	//Initiating glut variables
