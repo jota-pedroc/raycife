@@ -60,7 +60,7 @@ void crossProduct(float* result, float* v1, float* v2){
 	result[2] = v1[0] * v2[1] - v1[1] * v2[0];
 }
 
-int rayIntersectsTriangle(float *p, float *d,
+float rayIntersectsTriangle(float *p, float *d,
 	float *v0, float *v1, float *v2) {
 
 	float e1[3], e2[3], h[3], s[3], q[3];
@@ -375,12 +375,16 @@ Color trace_path(int depth, Raio ray, Cena scene, Luz luz){
 		float r1 = rand01();
 		float phi = acos(sqrt(r1));
 
+		direcao.x = sin(theta)*cos(phi);
+		direcao.z = sin(theta)*sin(phi);
+		direcao.x = cos(theta);
+
 		// build the direction vector with phi and theta
 		// Normalized v!!
 		// x = cos phi
 		// y = sen phi
 		// z = sen theta
-		Vetor perpendicular;
+		/*Vetor perpendicular;
 		perpendicular.z = 0;
 		if (normal.x != 0){
 			perpendicular.x = -normal.y / normal.x;
@@ -393,7 +397,7 @@ Color trace_path(int depth, Raio ray, Cena scene, Luz luz){
 		}
 
 		direcao = rotacionar(phi, normal, perpendicular);
-		direcao = rotacionar(theta, direcao, normal);
+		direcao = rotacionar(theta, direcao, normal);*/
 		
 		// the position vector is the intersection point		
 	}
@@ -435,9 +439,9 @@ Color trace_path(int depth, Raio ray, Cena scene, Luz luz){
 	// -----------------------------------output--------------------------------------
 	//*****Testar diferentes pesos*****
 	//output = csum(recursion, corLocal);
-	output.r = recursion.r * 0.4 + corLocal.r * 0.6;
-	output.g = recursion.g * 0.4 + corLocal.g * 0.6;
-	output.b = recursion.b * 0.4 + corLocal.b * 0.6;
+	output.r = recursion.r  + corLocal.r ;
+	output.g = recursion.g  + corLocal.g ;
+	output.b = recursion.b  + corLocal.b ;
 	return output;
 }
 
