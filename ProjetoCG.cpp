@@ -521,13 +521,13 @@ Color trace_path(int depth, Raio ray, Cena scene, Luz luz){
 
 	////Definindo o valor da cor local
 	Color corLocal;
-	/*if (sombra){
+	if (sombra){
 		corLocal.r = 0;
 		corLocal.g = 0;
 		corLocal.b = 0;
-	}else{*/
+	}else{
 		corLocal = csum(csum(difusa, Color(ambiente)), especular);
-	//}
+	}
 	
 
 	// -------------------------recursion for contribution from other objects---------------------------------
@@ -602,7 +602,7 @@ Color trace_path(int depth, Raio ray, Cena scene, Luz luz){
 	novoRaio.direcao = normalizar(novoRaio.direcao);
 
 	Color recursion = trace_path(depth + 1, novoRaio, scene, luz);
-
+	
 	// -----------------------------------output--------------------------------------
 	//*****Testar diferentes pesos*****
 
@@ -796,10 +796,10 @@ int main(int argc, char **argv)
 
 	//Loading view paramenters
 	janela = cena.janela;
-	luz = cena.luz;
-	luz.ponto.x = 0;
-	luz.ponto.y = 3.8360;
-	luz.ponto.z = -25; //----------->light see how to load the file
+	
+	cena.luz.ponto.x = 0;
+	cena.luz.ponto.y = 3.8360;
+	cena.luz.ponto.z = -25; //----------->light see how to load the file
 		  
 	//Loading objects of the scene
 	objetos = cena.objetos;
@@ -845,19 +845,19 @@ int main(int argc, char **argv)
 	}
 	buf.buffer = img;
 
-	//buf.buffer = render(janela,cena,olho,luz);
+	////buf.buffer = render(janela,cena,olho,luz);
 
-	//Creating texture and storing into a array
-	texture = createTexture(objetos.at(7));
+	////Creating texture and storing into a array
+	//texture = createTexture(objetos.at(7));
 
-	//Carregando o objeto que representa o plano da textura
-	Objeto textureObject;
-	char realPath[100] = "cornel_box\\";
-	strcat(realPath, "texture.obj");
-	lerObjeto(realPath, textureObject);
+	////Carregando o objeto que representa o plano da textura
+	//Objeto textureObject;
+	//char realPath[100] = "cornel_box\\";
+	//strcat(realPath, "texture.obj");
+	//lerObjeto(realPath, textureObject);
 
-	applyTexture(textureObject, buf.buffer);
-	
+	//applyTexture(textureObject, buf.buffer);
+	//
 	
 	///////////////////////////////////////////OPENGL//////////////////////////////////////////////
 	//Initiating glut variables
