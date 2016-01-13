@@ -16,7 +16,7 @@
 using namespace std;
 
 #define N_THREADS 4
-#define MAX_RECURSION_DEPTH 3
+#define MAX_RECURSION_DEPTH 5
 
 Buffer buf;
 //Recebe 800x600 como defalt mas é alterada dependendo do arquivo de entrada
@@ -309,10 +309,11 @@ Raio cameraTexture(int x, int y, int bufferSizeX, int bufferSizeY, Luz l){
 	float y1 = -16.59;
 
 	sizexw = x1 - x0;
-	sizezw = y0 - y1;
+	sizezw = y1 - y0;
 	xw = ((float)x / bufferSizeX)*sizexw + x0;
-	zw = ((float)y / bufferSizeY)*sizezw + y1;
-	yw = 1.0f;
+	zw = ((float)y / bufferSizeY)*sizezw + y0;
+	yw = 2.0f;
+
 
 	posicao.x = l.ponto.x;
 	posicao.y = l.ponto.y;
@@ -397,14 +398,22 @@ Color** applyTexture(Objeto objectTexture, Color** buffer){
 				Intersection planeIntersect = intersectTexture(objectTexture,newRay,cena);
 
 				if (planeIntersect.hit){//If hit the plane continue
-					float x0=objectTexture.vertices.at(2).x;
-					float x1 = objectTexture.vertices.at(0).x;
-					float z0 = objectTexture.vertices.at(2).z;
-					float z1 = objectTexture.vertices.at(0).z;
+					float x0 = -3.822;
+					float x1 = 3.822;
+					float z0 = -32.76;
+					float z1 = -16.59;
+
 					Ponto p = planeIntersect.p;
 
 					int mapX = floor(((p.x - x0)*textureX) / (x1-x0));
 					int mapY = floor(((p.z- z0)*textureY) / (z1 - z0));
+
+					//Making sure that everything stays inside the array limit
+					if (mapX < 0) mapX = 0;
+					if (mapY < 0) mapY = 0;
+					if (mapX >= textureX) mapX = textureX-1;
+					if (mapX >= textureY) mapY = textureY-1;
+
 					
 					if (texture[mapX][mapY].r == 0){//Verifies on the texture if it is a shadow point
 						buffer[i][j] = Color(0,0,0);
@@ -788,10 +797,9 @@ int main(int argc, char **argv)
 	//Loading view paramenters
 	janela = cena.janela;
 	luz = cena.luz;
-	luz.ponto.x = -3.8220;
+	luz.ponto.x = 0;
 	luz.ponto.y = 3.8360;
-	luz.ponto.z = -32.7600; //----------->light see how to load the file
-	
+	luz.ponto.z = -25; //----------->light see how to load the file
 		  
 	//Loading objects of the scene
 	objetos = cena.objetos;
@@ -811,7 +819,7 @@ int main(int argc, char **argv)
 		objetos.at(i).normalVertice();
 	}
 
-	//Chamando o algoritmos de renderização que inclui o Path Tracing
+	////Chamando o algoritmos de renderização que inclui o Path Tracing
 	Color** img = (Color**) malloc(sizeof(Color*)*janela.sizeX);
 	for (int i = 0; i < janela.sizeX; i++)
 	{
@@ -840,7 +848,7 @@ int main(int argc, char **argv)
 	//buf.buffer = render(janela,cena,olho,luz);
 
 	//Creating texture and storing into a array
-	texture=createTexture(objetos.at(4));
+	texture = createTexture(objetos.at(7));
 
 	//Carregando o objeto que representa o plano da textura
 	Objeto textureObject;
@@ -848,9 +856,7 @@ int main(int argc, char **argv)
 	strcat(realPath, "texture.obj");
 	lerObjeto(realPath, textureObject);
 
-	//Applying texture to the scene
-	objetos.erase(objetos.begin()+4);//removes the cube which generated the texture
-	applyTexture(textureObject,buf.buffer);
+	applyTexture(textureObject, buf.buffer);
 	
 	
 	///////////////////////////////////////////OPENGL//////////////////////////////////////////////
