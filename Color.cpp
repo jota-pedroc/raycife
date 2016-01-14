@@ -35,3 +35,8 @@ Color csum(Color c1, Color c2){
 	output.b = c1.b + c2.b;
 	return output;
 }
+
+Color::~Color()
+{
+	// chamada quando delete é utilizado
+}

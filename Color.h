@@ -10,6 +10,8 @@ public:
 	Color(Vetor v);
 
 	Vetor toVetor();
+
+	~Color();
 };
 
 // Soma de cores

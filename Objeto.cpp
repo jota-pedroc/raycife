@@ -50,6 +50,7 @@ void Objeto::normalVertice(){
 	}
 }
 
+
 Vetor Objeto::coordBaricentricas(Ponto p, Face f)
 {
 	//Essa retorna alfa, beta e gama das coordenadas baricentricas
