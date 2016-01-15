@@ -19,8 +19,8 @@
 
 using namespace std;
 
-#define N_THREADS 4
-#define MAX_RECURSION_DEPTH 4
+#define N_THREADS 200
+#define MAX_RECURSION_DEPTH 5
 
 Buffer buf;
 //Recebe 800x600 como defalt mas é alterada dependendo do arquivo de entrada
@@ -134,7 +134,7 @@ double distTemp = -1;
 
 
 Vetor calcularRefracao(float n1, float n2, Vetor i, Vetor n){
-	float cosI = escalar(i, n);
+	float cosI = -escalar(i, n);
 
 	float sen2t = pow(n1 / n2, 2)*(1 - pow(cosI, 2));
 
@@ -638,12 +638,12 @@ Color trace_path(int depth, Raio ray, Cena scene, Luz luz, int i, int j, int nSa
 		if (cos > 0){
 			n1 = closest.coeficienteRefracao;
 			n2 = 1;
-			direcao = calcularRefracao(n1, n2, ray.direcao, normal);
+			direcao = calcularRefracao(n1, n2, ray.direcao, kprod(-1, normal));
 		}
 		else {
 			n1 = 1;
 			n2 = closest.coeficienteRefracao;
-			direcao = calcularRefracao(n1, n2, ray.direcao, kprod(-1, normal));
+			direcao = calcularRefracao(n1, n2, ray.direcao, normal);
 		}
 	}
 
@@ -673,13 +673,19 @@ Color trace_path(int depth, Raio ray, Cena scene, Luz luz, int i, int j, int nSa
 	// -----------------------------------output--------------------------------------
 	//*****Testar diferentes pesos*****
 
-	output.r = (recursion.r  + corLocal.r)*kd;
+	/*output.r = (recursion.r  + corLocal.r)*kd;
 	output.g = (recursion.g + corLocal.g)*kd;
-	output.b = (recursion.b + corLocal.b)*kd;
-	
-	/*output.r = recursion.r*.5 + corLocal.r*.5;
+	output.b = (recursion.b + corLocal.b)*kd;*/
+	/*
+	output.r = recursion.r*.5 + corLocal.r*.5;
 	output.g = recursion.g*.5 + corLocal.g*.5;
-	output.b = recursion.b *.5 + corLocal.b*.5;*/
+	output.b = recursion.b *.5 + corLocal.b*.5;
+	*/
+
+	float factor = max(max(kd, ks), kt);
+	output.r = (recursion.r + corLocal.r)*factor;
+	output.g = (recursion.g + corLocal.g)*factor;
+	output.b = (recursion.b + corLocal.b)*factor; 
 
 	return output;
 }
@@ -766,7 +772,7 @@ void renderThread(int id, Color** output, int x, int xmax, int y, int ymax, Jane
 
 	int nSamples = scene.npaths; // number of color samples per pixel
 
-	float count = 0, maxCount = xsize*ysize*nSamples, blockSize = maxCount / 100, blockCount = blockSize;
+	float count = 0, maxCount = xsize*ysize*nSamples, blockSize = maxCount / 10, blockCount = blockSize;
 	Color** img = output; // output img
 	Color sum, sample; // Acumulator and sample variables, used for each different pixel and pixel sample, respectively
 	Raio ray; // Camera to window variable, used for each different pixel

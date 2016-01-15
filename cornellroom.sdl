@@ -1,0 +1,55 @@
+# Tentativa :-) de arquivo sdl para Cornell Roomi
+# Marcelo Walter
+# Nov. 2005
+# Este arquivo NAO foi testado!!!
+# Modificado de acordo com os testes
+# do Vinicius 6/12/2005
+
+eye 0.0 0.0 5.7
+size 200 200
+ortho -1 -1 1 1
+background 0.0 0.0 0.0
+ambient 0.5
+
+# Luz branca retangulo no centro do teto
+# light <name.obj> red green blue il x y z
+light luzcornell.obj 1.0 1.0 1.0 1.0 0 3.8360 -25.0
+
+npaths 10
+tonemapping 2
+seed 9
+
+# Aqui comeca a definicao das geometrias
+# Um arquivo para cada parede
+# mais 2 arquivos com os cubos
+# As cores seguem a cena de Cornell
+# As paredes sao todas totalmente difusas
+# bem como os 2 cubos amarelos
+
+#object <name.obj> red green blue ka kd ks kt n refractionCoef
+
+# left wall RED
+object leftwall.obj 1.0 0.0 0.0 0.3 0.7 0 0 5 0
+
+# right wall GREEN
+object rightwall.obj 0.0 1.0 0.0 0.3 0.7 0 0 5 0
+
+# floor WHITE
+object floor.obj 1.0 1.0 1.0 0.3 0.7 0 0 5 0
+
+# back wall WHITE
+object back.obj 1.0 1.0 1.0 0.3 0.7 0 0 5 0
+
+# ceiling WHITE
+object ceiling.obj 1.0 1.0 1.0 0.3 0.7 0 0 5 0
+
+# cube 1 WHITE
+object cube1.obj 1.0 1.0 1.0 0.3 0.7 0 0 5 0
+
+# cube 2 WHITE
+object cube2.obj 1.0 1.0 1.0 0.3 0.7 0 0 5 0
+
+quadric 1.0 1.0 1.0 0.0 0.0 0.0 -1.0 0.0 22.0 484.0 1.0 1.0 1.0 0.0 0.0 0 1 5 1.33	
+
+output cornell.pnm
+
