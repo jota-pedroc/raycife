@@ -57,7 +57,7 @@ private:
 	Face f;
 };
 
-Intersection bInt1[400][400];
+Intersection bInt1[300][300];
 Ponto testPoints[500];
 int countPoints = 0;
 
@@ -508,7 +508,30 @@ Color trace_path(int depth, Raio ray, Cena scene, Luz luz, int i, int j, int nSa
 	Ponto inters = intersection.p;
 	Vetor normal = intersection.normal;
 	normal = normalizar(normal);
-	Vetor toLight = defVetor(inters, luz.ponto);
+
+	//Sortear um ponto de luz aleatório dentro do obj Luz
+	int triangulo = rand() % 2;
+	Face triLuz = objetos.at(0).faces.at(triangulo);
+	double alpha = rand() %100;
+	double beta = rand() % 100;
+	double gama = rand() % 100;
+	double sum = alpha + beta + gama;
+	alpha = alpha / sum;
+	beta = beta / sum;
+	gama = gama / sum;
+
+	Vertice* v1 = triLuz.v1;
+	Vertice* v2 = triLuz.v2;
+	Vertice* v3 = triLuz.v3;
+
+	Ponto lightRand;
+
+	lightRand.x = alpha*v1->x + beta*v2->x+gama*v3->x;
+	lightRand.y = alpha*v1->y + beta*v2->y + gama*v3->y;
+	lightRand.z = alpha*v1->z + beta*v2->z + gama*v3->z;
+
+
+	Vetor toLight = defVetor(inters, lightRand);
 	toLight = normalizar(toLight);
 	float kd = closest.kd, ks = closest.ks, kt = closest.kt;
 	
@@ -537,27 +560,26 @@ Color trace_path(int depth, Raio ray, Cena scene, Luz luz, int i, int j, int nSa
 	//Shadow Ray
 	Raio ray2;
 	ray2.direcao = toLight;
-	ray2.posicao.x = inters.x;
-	ray2.posicao.y = inters.y;
-	ray2.posicao.z = inters.z;
 	ray2.direcao = normalizar(ray2.direcao);
 
+	float bias = 1e-4;//Walk a little bit in the normal direction in order to avoid self intersection
+	Vetor dist = kprod(bias, normal);
+	
+	ray2.posicao.x = inters.x + dist.x;
+	ray2.posicao.y = inters.y + dist.y;
+	ray2.posicao.z = inters.z + dist.z;
 
 	bool sombra = shadowRay(ray2,scene);
 
 	////Definindo o valor da cor local
 	Color corLocal;
-	/*if (sombra){
+	if (sombra){
 		corLocal.r = 0;
 		corLocal.g = 0;
 		corLocal.b = 0;
-	}else{*/
+	}else{
 		corLocal = csum(csum(difusa, Color(ambiente)), especular);
-		corLocal.r = corLocal.r / (corLocal.r+cena.tonemapping);
-		corLocal.g = corLocal.g / (corLocal.g + cena.tonemapping);
-		corLocal.b = corLocal.b / (corLocal.b + cena.tonemapping);
-
-	//}
+	}
 	
 
 	// -------------------------recursion for contribution from other objects---------------------------------
@@ -667,21 +689,28 @@ Color trace_path(int depth, Raio ray, Cena scene, Luz luz, int i, int j, int nSa
 	novoRaio.posicao.y = inters.y;
 	novoRaio.posicao.z = inters.z;
 	novoRaio.direcao = normalizar(novoRaio.direcao);
-
 	float cos_theta = escalar(direcao, normal);
+
+	Color emitance;
+	float auxEmtR = escalar(normal, toLight)*cena.luz.Ip*closest.cor.r;
+	float auxEmtG = escalar(normal, toLight)*cena.luz.Ip*closest.cor.g;
+	float auxEmtB = escalar(normal, toLight)*cena.luz.Ip*closest.cor.b;
+	emitance = Color(auxEmtR, auxEmtG, auxEmtB);
+	
+
 	Color BRDF;
-	BRDF.r = 2 * corLocal.r * cos_theta;
-	BRDF.g = 2 * corLocal.g * cos_theta;
-	BRDF.b = 2 * corLocal.b * cos_theta;
+	BRDF.r = 2 * emitance.r * cos_theta;
+	BRDF.g = 2 * emitance.g * cos_theta;
+	BRDF.b = 2 * emitance.b * cos_theta;
 
 	Color recursion = trace_path(depth + 1, novoRaio, scene, scene.luz, i, j, nSample);
 	
 	// -----------------------------------output--------------------------------------
 	//*****Testar diferentes pesos*****
 
-	output.r = recursion.r  + corLocal.r ;
-	output.g = recursion.g  + corLocal.g ;
-	output.b = recursion.b  + corLocal.b ;
+	output.r = (recursion.r  + corLocal.r)*kd;
+	output.g = (recursion.g + corLocal.g)*kd;
+	output.b = (recursion.b + corLocal.b)*kd;
 	
 	/*output.r = recursion.r*.5 + corLocal.r*.5;
 	output.g = recursion.g*.5 + corLocal.g*.5;
@@ -758,6 +787,10 @@ void testingDifuse(){
 	}
 }
 
+float clamp(float x){ return x<0 ? 0 : x>1 ? 1 : x; };
+
+float tColor(float x){ return pow(clamp(x), 1 / 2.2); };
+
 void renderThread(int id, Color** output, int x, int xmax, int y, int ymax, Janela jan, Cena scene, Olho o, Luz luz){
 	/*
 	* Render a image using the path tracing algorithm for the given scene, camera and window.
@@ -770,7 +803,7 @@ void renderThread(int id, Color** output, int x, int xmax, int y, int ymax, Jane
 
 	float count = 0, maxCount = xsize*ysize*nSamples, blockSize = maxCount / 100, blockCount = blockSize;
 	Color** img = output; // output img
-	
+	Color sum, sample; // Acumulator and sample variables, used for each different pixel and pixel sample, respectively
 	Raio ray; // Camera to window variable, used for each different pixel
 
 
@@ -782,25 +815,18 @@ void renderThread(int id, Color** output, int x, int xmax, int y, int ymax, Jane
 	{
 		for (int j = y; j < ymax; j++)
 		{
-			
-			
-			// Color sum, sample; // Acumulator and sample variables, used for each different pixel and pixel sample, respectively
-			Color sample;
-			float sumr = 0;
-			float sumg = 0;
-			float sumb = 0;
+			sum.r = 0;
+			sum.g = 0;
+			sum.b = 0;
 			ray = cameraRay(i, j, jan, o);
-			
+			if (i > 100 && i < 110 && j > 180 && j < 190){
+				int debug = 2 + 2;
+			}
 			for (int k = 0; k < nSamples; k++)
 			{
 
-				sample = trace_path(0, ray, scene, cena.luz,i,j,k);
-				
-				
-				sumr += sample.r;
-				sumg += sample.g;
-				sumb += sample.b;
-
+				sample = trace_path(0, ray, scene, luz,i,j,k);
+				sum = csum(sum, sample);
 				count++;
 				if (count > blockCount){
 					time_t elapsed = time(nullptr) - startTime;
@@ -812,11 +838,12 @@ void renderThread(int id, Color** output, int x, int xmax, int y, int ymax, Jane
 			}
 
 
-			Color out = Color(sumr / nSamples, sumg / nSamples, sumb / nSamples);
-			
+			Color out = Color(sum.r / nSamples, sum.g / nSamples, sum.b / nSamples);
 
 			//Applying Tone Mapping 
-			Color newOut = Color(out.r, out.g , out.b );
+			//out = Color(out.r / (out.r + cena.tonemapping), out.g / (out.g + cena.tonemapping), out.b / (out.b + cena.tonemapping));
+
+			Color newOut = Color(out.r, out.g, out.b);
 			img[i][j] = newOut;
 
 			//img[i][j] = Color(sum.r/nSamples, sum.g/nSamples, sum.b/nSamples);
@@ -958,7 +985,7 @@ int main(int argc, char **argv)
 	
 	cena.luz.ponto.x = 0;
 	cena.luz.ponto.y = 3.8360;
-	cena.luz.ponto.z = -23.32; //----------->light see how to load the file
+	cena.luz.ponto.z = -24; //----------->light see how to load the file
 		  
 	//Loading objects of the scene
 	objetos = cena.objetos;
@@ -1003,7 +1030,7 @@ int main(int argc, char **argv)
 		threads[i].join();
 	}
 	buf.buffer = img;
-	testingDifuse();
+	//testingDifuse();
 
 	//buf.buffer = render(janela,cena,olho,luz);
 

@@ -53,7 +53,7 @@ void Objeto::normalVertice(){
 
 Vetor Objeto::coordBaricentricas(Ponto p, Face f)
 {
-	//Essa retorna alfa, beta e gama das coordenadas baricentricas
+	//Retorna alfa, beta e gama das coordenadas baricentricas
 	//Código baseado no livro Christer Ericson's Real-Time Collision Detection
 	float xa = f.v1->x;
 	float xb = f.v2->x;
