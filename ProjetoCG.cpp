@@ -20,7 +20,7 @@
 using namespace std;
 
 #define N_THREADS 4
-#define MAX_RECURSION_DEPTH 3
+#define MAX_RECURSION_DEPTH 4
 
 Buffer buf;
 //Recebe 800x600 como defalt mas é alterada dependendo do arquivo de entrada
@@ -445,6 +445,8 @@ bool shadowRay(Raio ray, Cena scene){
 	Intersection intersection = closestObject(ray, scene);
 	Objeto closest = intersection.objeto;
 	if (closest.isLight) return false;
+	if (intersection.p.y>= scene.luz.ponto.y)return false; //in case hits the ceiling
+
 
 	if (intersection.hit) retorno = true;
 	return retorno;
@@ -509,6 +511,10 @@ Color trace_path(int depth, Raio ray, Cena scene, Luz luz, int i, int j, int nSa
 	Vetor normal = intersection.normal;
 	normal = normalizar(normal);
 
+	if (i == 90 && j == 100){
+		int debug = 222;
+	}
+
 	//Sortear um ponto de luz aleatório dentro do obj Luz
 	int triangulo = rand() % 2;
 	Face triLuz = objetos.at(0).faces.at(triangulo);
@@ -562,7 +568,8 @@ Color trace_path(int depth, Raio ray, Cena scene, Luz luz, int i, int j, int nSa
 	ray2.direcao = toLight;
 	ray2.direcao = normalizar(ray2.direcao);
 
-	float bias = 1e-4;//Walk a little bit in the normal direction in order to avoid self intersection
+	//Walk a little bit in the normal direction in order to avoid self intersection
+	float bias = 1e-4;//Use in order to avoid noise
 	Vetor dist = kprod(bias, normal);
 	
 	ray2.posicao.x = inters.x + dist.x;
@@ -588,22 +595,6 @@ Color trace_path(int depth, Raio ray, Cena scene, Luz luz, int i, int j, int nSa
 	Vetor direcao = Vetor(), posicao = Vetor();
 	if (r < kd){
 		// raio difuso
-		//phi=cos-1 (sqrt(R1)) e theta = 2.pi.R2.
-		
-		/*const float u1 = rand01();
-		const float r = sqrt(u1);
-		const float theta = 2 * PI * rand01();
-
-		const float x = r * cos(theta);
-		const float y = r * sin(theta);
-		float z = sqrt(max(0.0f, 1 - u1));
-
-		direcao.x = x;
-		direcao.z = z;
-		direcao.y = y;
-		direcao = normalizar(direcao);*/
-		
-
 		float  r1 = 2 * PI * rand01();  // random angle around
 		float r2 = rand01();           // random distance from center
 		float r2s = sqrt(r2);          // square root of distance from center
@@ -630,32 +621,6 @@ Color trace_path(int depth, Raio ray, Cena scene, Luz luz, int i, int j, int nSa
 		psi = normalizar(psi);
 
 		direcao = psi;
-
-		/*direcao.x = sin(theta)*cos(phi);
-		direcao.z = sin(theta)*sin(phi);
-		direcao.x = cos(theta);*/
-
-		// build the direction vector with phi and theta
-		// Normalized v!!
-		// x = cos phi
-		// y = sen phi
-		// z = sen theta
-	/*	Vetor perpendicular;
-		perpendicular.z = 0;
-		if (normal.x != 0){
-			perpendicular.x = -normal.y / normal.x;
-			perpendicular.y = 1;
-			perpendicular = normalizar(perpendicular);
-		}
-		else {
-			perpendicular.x = 1;
-			perpendicular.y = 0;
-		}
-
-		direcao = rotacionar(phi, normal, perpendicular);
-		direcao = rotacionar(theta, direcao, normal);*/
-		
-		// the position vector is the intersection point		
 	}
 	else if (r < kd + ks){
 		// raio especular
