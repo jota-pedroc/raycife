@@ -19,7 +19,7 @@
 
 using namespace std;
 
-#define N_THREADS 200
+#define N_THREADS 6
 #define MAX_RECURSION_DEPTH 5
 
 Buffer buf;
@@ -536,6 +536,19 @@ Color trace_path(int depth, Raio ray, Cena scene, Luz luz, int i, int j, int nSa
 	lightRand.y = alpha*v1->y + beta*v2->y + gama*v3->y;
 	lightRand.z = alpha*v1->z + beta*v2->z + gama*v3->z;
 
+	//Opçao sem ruido menos automático
+	/*double a = (rand() %100)/100;
+	double b = (rand() % 100)/100;
+	double distX = 0.88 - (-0.88);
+	double distY = -23.35 - (-26.45);
+
+	distX = distX*a;
+	distY = distY*b;
+
+	Ponto lightRand;
+	lightRand.x = -0.88+distX;
+	lightRand.y = 3.83;
+	lightRand.z = -26.45 + distY;*/
 
 	Vetor toLight = defVetor(inters, lightRand);
 	toLight = normalizar(toLight);
@@ -588,6 +601,11 @@ Color trace_path(int depth, Raio ray, Cena scene, Luz luz, int i, int j, int nSa
 		corLocal = csum(csum(difusa, Color(ambiente)), especular);
 	}
 	
+	//Ray cast from the recursion
+	Raio novoRaio;
+	novoRaio.posicao.x = inters.x;
+	novoRaio.posicao.y = inters.y;
+	novoRaio.posicao.z = inters.z;
 
 	// -------------------------recursion for contribution from other objects---------------------------------
 	float ktot = kd + ks + kt;
@@ -633,26 +651,32 @@ Color trace_path(int depth, Raio ray, Cena scene, Luz luz, int i, int j, int nSa
 		// TODO
 		// objeto opaco? nenhuma cor transmitida
 		// caso contrario... verificar refracao
+
+
 		float cos = escalar(ray.direcao, normal);
 		float n1, n2;
 		if (cos > 0){
+			//Inside the object
 			n1 = closest.coeficienteRefracao;
 			n2 = 1;
 			direcao = calcularRefracao(n1, n2, ray.direcao, kprod(-1, normal));
+			normal = kprod(-1, normal);
 		}
 		else {
 			n1 = 1;
 			n2 = closest.coeficienteRefracao;
 			direcao = calcularRefracao(n1, n2, ray.direcao, normal);
 		}
+
+		Vetor dist2 = kprod(bias, normal);
+		novoRaio.posicao.x = inters.x - dist2.x;
+		novoRaio.posicao.y = inters.y - dist2.y;
+		novoRaio.posicao.z = inters.z - dist2.y;
 	}
 
 	// Use the direction and position vector to make a ray
-	Raio novoRaio;
+
 	novoRaio.direcao = direcao;
-	novoRaio.posicao.x = inters.x;
-	novoRaio.posicao.y = inters.y;
-	novoRaio.posicao.z = inters.z;
 	novoRaio.direcao = normalizar(novoRaio.direcao);
 	float cos_theta = escalar(direcao, normal);
 
@@ -683,6 +707,7 @@ Color trace_path(int depth, Raio ray, Cena scene, Luz luz, int i, int j, int nSa
 	*/
 
 	float factor = max(max(kd, ks), kt);
+
 	output.r = (recursion.r + corLocal.r)*factor;
 	output.g = (recursion.g + corLocal.g)*factor;
 	output.b = (recursion.b + corLocal.b)*factor; 
