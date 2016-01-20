@@ -19,7 +19,7 @@
 
 using namespace std;
 
-#define N_THREADS 6
+#define N_THREADS 3
 #define MAX_RECURSION_DEPTH 5
 
 Buffer buf;
@@ -143,14 +143,14 @@ Vetor calcularRefracao(float n1, float n2, Vetor i, Vetor n){
 }
 
 
-Color difuso(float ip, float kd, Vetor lightDir, Vetor normal, Color corObjeto){
+Color difuso(Color ip, float kd, Vetor lightDir, Vetor normal, Color corObjeto){
 
 	Color retorno;
 	float prodEscalar = escalar(lightDir, normal);		
-	float aux = ip*kd*prodEscalar;
-	retorno.r = aux*corObjeto.r; 
-	retorno.g = aux*corObjeto.g;
-	retorno.b = aux*corObjeto.b;
+	float aux = kd*prodEscalar;
+	retorno.r = ip.r*aux*corObjeto.r; 
+	retorno.g = ip.g*aux*corObjeto.g;
+	retorno.b = ip.b*aux*corObjeto.b;
 	
 	return retorno;
 };
@@ -236,6 +236,37 @@ Intersection closestObject(Raio ray, Cena scene){
 	return out;
 }
 
+Raio cameraRay(int x, int y, Janela jan, Olho o){
+	/*
+	* Trace a ray from the camera to the pixel (x,y) on the window
+	*/
+
+	Raio output; // Output variable
+	float xw, yw, zw, sizexw, sizeyw; // Pixel location and window size on world coordinates
+	Vetor direcao, posicao; // Ray's direction and position
+
+	sizexw = jan.x1 - jan.x0;
+	sizeyw = jan.y0 - jan.y1;
+	xw = ((float)x / jan.sizeX)*sizexw + jan.x0;
+	yw = ((float)y / jan.sizeY)*sizeyw + jan.y1;
+	zw = 0;
+
+	posicao.x = o.x;
+	posicao.y = o.y;
+	posicao.z = o.z;
+
+	direcao.x = xw - o.x;
+	direcao.y = yw - o.y;
+	direcao.z = zw - o.z;
+
+	output.posicao = posicao;
+	output.direcao = direcao;
+	output.direcao = normalizar(output.direcao);
+	return output;
+}
+
+// --------------------------SHADOW TEXTURE--------------------------
+
 Intersection intersectTexture(Objeto  texture, Raio ray, Cena scene){
 	Intersection out;
 	Objeto current;
@@ -275,35 +306,6 @@ Intersection intersectTexture(Objeto  texture, Raio ray, Cena scene){
 		out.hit = false;
 		return out;
 	}
-}
-
-Raio cameraRay(int x, int y, Janela jan, Olho o){
-	/*
-	* Trace a ray from the camera to the pixel (x,y) on the window
-	*/
-
-	Raio output; // Output variable
-	float xw, yw, zw, sizexw, sizeyw; // Pixel location and window size on world coordinates
-	Vetor direcao, posicao; // Ray's direction and position
-
-	sizexw = jan.x1 - jan.x0;
-	sizeyw = jan.y0 - jan.y1;
-	xw = ((float)x / jan.sizeX)*sizexw + jan.x0;
-	yw = ((float)y / jan.sizeY)*sizeyw + jan.y1;
-	zw = 0;
-
-	posicao.x = o.x;
-	posicao.y = o.y;
-	posicao.z = o.z;
-
-	direcao.x = xw - o.x;
-	direcao.y = yw - o.y;
-	direcao.z = zw - o.z;
-
-	output.posicao = posicao;
-	output.direcao = direcao;
-	output.direcao = normalizar(output.direcao);
-	return output;
 }
 
 Raio cameraTexture(int x, int y, int bufferSizeX, int bufferSizeY, Luz l){
@@ -376,6 +378,7 @@ Color** createTexture(Objeto objectTexture){
 	return img;
 }
 
+//Mapping texture
 Color** applyTexture(Objeto objectTexture, Color** buffer){
 	int xsize = 200; // width in pixels
 	int ysize = 200; // height in pixels
@@ -392,9 +395,9 @@ Color** applyTexture(Objeto objectTexture, Color** buffer){
 		img[i] = (Color*)malloc(sizeof(Color)*ysize); // Array instanciation
 		for (int j = 0; j < ysize; j++)
 		{
-			ray = cameraRay(i, j,janela,olho);
+			ray = cameraRay(i, j, janela, olho);
 
-			Intersection intersect = closestObject(ray,cena);
+			Intersection intersect = closestObject(ray, cena);
 
 			if (intersect.hit){//Tests if the ray hits any object at the scene
 				Ponto hitPoint = intersect.p;
@@ -407,7 +410,7 @@ Color** applyTexture(Objeto objectTexture, Color** buffer){
 				newRay.posicao.x = hitPoint.x;
 				newRay.posicao.y = hitPoint.y;
 				newRay.posicao.z = hitPoint.z;
-				Intersection planeIntersect = intersectTexture(objectTexture,newRay,cena);
+				Intersection planeIntersect = intersectTexture(objectTexture, newRay, cena);
 
 				if (planeIntersect.hit){//If hit the plane continue
 					float x0 = -3.822;
@@ -417,18 +420,18 @@ Color** applyTexture(Objeto objectTexture, Color** buffer){
 
 					Ponto p = planeIntersect.p;
 
-					int mapX = floor(((p.x - x0)*textureX) / (x1-x0));
-					int mapY = floor(((p.z- z0)*textureY) / (z1 - z0));
+					int mapX = floor(((p.x - x0)*textureX) / (x1 - x0));
+					int mapY = floor(((p.z - z0)*textureY) / (z1 - z0));
 
 					//Making sure that everything stays inside the array limit
 					if (mapX < 0) mapX = 0;
 					if (mapY < 0) mapY = 0;
-					if (mapX >= textureX) mapX = textureX-1;
-					if (mapX >= textureY) mapY = textureY-1;
+					if (mapX >= textureX) mapX = textureX - 1;
+					if (mapX >= textureY) mapY = textureY - 1;
 
-					
+
 					if (texture[mapX][mapY].r == 0){//Verifies on the texture if it is a shadow point
-						buffer[i][j] = Color(0,0,0);
+						buffer[i][j] = Color(0, 0, 0);
 					}
 				}
 			}
@@ -439,15 +442,12 @@ Color** applyTexture(Objeto objectTexture, Color** buffer){
 }
 
 
-
 bool shadowRay(Raio ray, Cena scene){
 	bool retorno = false;
 	Intersection intersection = closestObject(ray, scene);
 	Objeto closest = intersection.objeto;
 	if (closest.isLight) return false;
-	if (intersection.p.y>= scene.luz.ponto.y)return false; //in case hits the ceiling
-
-
+	
 	if (intersection.hit) retorno = true;
 	return retorno;
 }
@@ -511,9 +511,7 @@ Color trace_path(int depth, Raio ray, Cena scene, Luz luz, int i, int j, int nSa
 	Vetor normal = intersection.normal;
 	normal = normalizar(normal);
 
-	if (i == 90 && j == 100){
-		int debug = 222;
-	}
+	float bias = 1e-4;//Use in order to avoid noise
 
 	//Sortear um ponto de luz aleatório dentro do obj Luz
 	int triangulo = rand() % 2;
@@ -533,7 +531,7 @@ Color trace_path(int depth, Raio ray, Cena scene, Luz luz, int i, int j, int nSa
 	Ponto lightRand;
 
 	lightRand.x = alpha*v1->x + beta*v2->x+gama*v3->x;
-	lightRand.y = alpha*v1->y + beta*v2->y + gama*v3->y;
+	lightRand.y = v1->y;
 	lightRand.z = alpha*v1->z + beta*v2->z + gama*v3->z;
 
 	//Opçao sem ruido menos automático
@@ -550,7 +548,7 @@ Color trace_path(int depth, Raio ray, Cena scene, Luz luz, int i, int j, int nSa
 	lightRand.y = 3.83;
 	lightRand.z = -26.45 + distY;*/
 
-	Vetor toLight = defVetor(inters, lightRand);
+	Vetor toLight = defVetor(inters, cena.luz.ponto);
 	toLight = normalizar(toLight);
 	float kd = closest.kd, ks = closest.ks, kt = closest.kt;
 	
@@ -561,7 +559,7 @@ Color trace_path(int depth, Raio ray, Cena scene, Luz luz, int i, int j, int nSa
 	Vetor ambiente = kprod(iA*closest.ka, closest.cor.toVetor());
 
 	//Rdifuso = Ip*kd(L.N)r
-	Color difusa = difuso(luz.Ip, closest.kd, toLight, normal, closest.cor);
+	Color difusa = difuso(luz.cor, closest.kd, toLight, normal, closest.cor);
 
 	//Respecular = Ip*ks*(R.V)^n
 	Vetor rVetor =subVetor(kprod(2 * escalar(toLight,normal), normal), toLight);
@@ -578,11 +576,9 @@ Color trace_path(int depth, Raio ray, Cena scene, Luz luz, int i, int j, int nSa
 
 	//Shadow Ray
 	Raio ray2;
-	ray2.direcao = toLight;
-	ray2.direcao = normalizar(ray2.direcao);
+	ray2.direcao =  defVetor(inters, lightRand);
 
 	//Walk a little bit in the normal direction in order to avoid self intersection
-	float bias = 1e-4;//Use in order to avoid noise
 	Vetor dist = kprod(bias, normal);
 	
 	ray2.posicao.x = inters.x + dist.x;
@@ -1029,6 +1025,8 @@ int main(int argc, char **argv)
 	//testingDifuse();
 
 	//buf.buffer = render(janela,cena,olho,luz);
+
+	///////////////////////////////////////////Texture//////////////////////////////////////////////
 
 	//////Creating texture and storing into a array
 	//texture = createTexture(objetos.at(7));
