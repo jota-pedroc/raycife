@@ -10,12 +10,12 @@
 - Implementar Path Tracing.
 - Implementar um objeto triangulado fechado, e mostrar sua sombra através de textura de sombra.
 
-A implementação do Shadow Texture pode ser encontrado aqui:
+A implementação do **Shadow Texture** pode ser encontrada aqui:
 
-Funções:
+**Funções:**
 https://github.com/jpmarcolinoc/raycife/blob/master/ProjetoCG.cpp#L268-L442
 
-No main:
+**No main:**
 https://github.com/jpmarcolinoc/raycife/blob/master/ProjetoCG.cpp#L1015-L1028
 
 **Exemplo Path Tracing 300 SPP**
