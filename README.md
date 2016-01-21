@@ -18,3 +18,6 @@ https://github.com/jpmarcolinoc/raycife/blob/master/ProjetoCG.cpp#L268-L442
 No main:
 https://github.com/jpmarcolinoc/raycife/blob/master/ProjetoCG.cpp#L1015-L1028
 
+**Exemplo Path Tracing 300 SPP**
+
+![alt tag](https://github.com/jpmarcolinoc/raycife/blob/master/300%20samples.PNG)
