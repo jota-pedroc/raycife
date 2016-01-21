@@ -34,7 +34,9 @@ public:
 	vector<Face> faces;
 	BoundingBox boundingBox;
 	bool isLight = false;
+	bool isTexture = false;
 	float coeficienteRefracao;
+
 
 	void normalVertice(); // Pre-processamento. Calcula e armazena a normal de todos os vertices nas faces
 

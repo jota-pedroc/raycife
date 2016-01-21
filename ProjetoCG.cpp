@@ -40,8 +40,8 @@ Cena cena;
 Luz luz;
 
 Color** texture;
-int textureX = 200;
-int textureY = 200;
+int textureX = 300;
+int textureY = 300;
 
 //Loading objects of the scene
 vector<Objeto> objetos;
@@ -326,7 +326,7 @@ Raio cameraTexture(int x, int y, int bufferSizeX, int bufferSizeY, Luz l){
 	sizezw = y1 - y0;
 	xw = ((float)x / bufferSizeX)*sizexw + x0;
 	zw = ((float)y / bufferSizeY)*sizezw + y0;
-	yw = 2.0f;
+	yw = 1.5f;
 
 
 	posicao.x = l.ponto.x;
@@ -369,7 +369,7 @@ Color** createTexture(Objeto objectTexture){
 				img[i][j] = out;
 			}
 			else{
-				Color out = Color(255, 255, 255);
+				Color out = Color(1, 1, 1);
 				img[i][j] = out;
 			}
 		}
@@ -380,8 +380,8 @@ Color** createTexture(Objeto objectTexture){
 
 //Mapping texture
 Color** applyTexture(Objeto objectTexture, Color** buffer){
-	int xsize = 200; // width in pixels
-	int ysize = 200; // height in pixels
+	int xsize = 300; // width in pixels
+	int ysize = 300; // height in pixels
 
 	Color** img; // output img
 	Raio ray; // Camera to window variable, used for each different pixel
@@ -399,7 +399,7 @@ Color** applyTexture(Objeto objectTexture, Color** buffer){
 
 			Intersection intersect = closestObject(ray, cena);
 
-			if (intersect.hit){//Tests if the ray hits any object at the scene
+			if (intersect.hit && !intersect.objeto.isTexture){//Tests if the ray hits any object at the scene
 				Ponto hitPoint = intersect.p;
 
 				//Cast another ray in the light direction in order to get the texture
@@ -533,20 +533,6 @@ Color trace_path(int depth, Raio ray, Cena scene, Luz luz, int i, int j, int nSa
 	lightRand.x = alpha*v1->x + beta*v2->x+gama*v3->x;
 	lightRand.y = v1->y;
 	lightRand.z = alpha*v1->z + beta*v2->z + gama*v3->z;
-
-	//Opçao sem ruido menos automático
-	/*double a = (rand() %100)/100;
-	double b = (rand() % 100)/100;
-	double distX = 0.88 - (-0.88);
-	double distY = -23.35 - (-26.45);
-
-	distX = distX*a;
-	distY = distY*b;
-
-	Ponto lightRand;
-	lightRand.x = -0.88+distX;
-	lightRand.y = 3.83;
-	lightRand.z = -26.45 + distY;*/
 
 	Vetor toLight = defVetor(inters, cena.luz.ponto);
 	toLight = normalizar(toLight);
@@ -1028,17 +1014,18 @@ int main(int argc, char **argv)
 
 	///////////////////////////////////////////Texture//////////////////////////////////////////////
 
-	//////Creating texture and storing into a array
-	//texture = createTexture(objetos.at(7));
+	//Creating texture and storing into a array
+	//objetos.at(6).isTexture = true; //Indicating that this object is going to have a shadow texture
+	//buf.buffer = createTexture(objetos.at(6));
 
-	//////Carregando o objeto que representa o plano da textura
+	////Carregando o objeto que representa o plano da textura
 	//Objeto textureObject;
 	//char realPath[100] = "cornel_box\\";
 	//strcat(realPath, "texture.obj");
 	//lerObjeto(realPath, textureObject);
 
 	//applyTexture(textureObject, buf.buffer);
-	
+	//
 	
 	///////////////////////////////////////////OPENGL//////////////////////////////////////////////
 	//Initiating glut variables
