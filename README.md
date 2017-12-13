@@ -25,6 +25,6 @@ https://github.com/jpmarcolinoc/raycife/blob/master/ProjetoCG.cpp#L1015-L1028
 **Outras cenas geradas**
 ![alt tag](https://github.com/jpmarcolinoc/raycife/blob/master/pathTracing1.png)
 
-![alt tag](https://github.com/jpmarcolinoc/raycife/blob/master/pathTracingSpheres.png)
+![alt tag](https://github.com/jpmarcolinoc/raycife/blob/master/pathTracingSpheres.png | width=200)
 
-![alt tag](https://github.com/jpmarcolinoc/raycife/blob/master/pathTracingTexture.png)
+![alt tag](https://github.com/jpmarcolinoc/raycife/blob/master/pathTracingTexture.png | width=48)
